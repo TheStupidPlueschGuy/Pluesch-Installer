@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<title>Plüsch App</title>
+<style>
+  :root {
+    --bg: #15151a;
+    --panel: #1d1d24;
+    --border: #2c2c35;
+    --text: #eee;
+    --muted: #9a9aa5;
+    --accent: #e8a33d; /* schlicht gehalten - Gold/Amber als Platzhalter-Akzent */
+    --danger: #e05a5a;
+    --ok: #4caf7d;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: "Segoe UI", system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    height: 100vh;
+    overflow: hidden;
+  }
+  #app { display: flex; flex-direction: column; height: 100vh; }
+
+  header {
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+    -webkit-app-region: drag;
+  }
+  header h1 { font-size: 16px; margin: 0; font-weight: 600; letter-spacing: .3px; }
+  header .user-chip {
+    font-size: 13px;
+    color: var(--muted);
+    display: none;
+    align-items: center;
+    gap: 10px;
+  }
+  header .user-chip button {
+    -webkit-app-region: no-drag;
+  }
+
+  main { flex: 1; overflow: hidden; display: flex; }
+
+  /* ---- Login/Register ---- */
+  #authScreen {
+    margin: auto;
+    width: 340px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 28px;
+  }
+  #authScreen h2 { margin: 0 0 4px; font-size: 20px; }
+  #authScreen p.sub { margin: 0 0 20px; color: var(--muted); font-size: 13px; }
+  .field { margin-bottom: 14px; }
+  .field label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 5px; }
+  .field input {
+    width: 100%;
+    padding: 9px 10px;
+    background: #121216;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    font-size: 14px;
+  }
+  .field input:focus { outline: none; border-color: var(--accent); }
+
+  button.primary {
+    width: 100%;
+    padding: 10px;
+    background: var(--accent);
+    border: none;
+    border-radius: 6px;
+    color: #1a1a1a;
+    font-weight: 600;
+    font-size: 14px;
+    cursor: pointer;
+  }
+  button.primary:disabled { opacity: .6; cursor: default; }
+  button.link {
+    background: none;
+    border: none;
+    color: var(--muted);
+    font-size: 12px;
+    cursor: pointer;
+    text-decoration: underline;
+    padding: 0;
+  }
+  .authFooter { margin-top: 14px; text-align: center; }
+  .errorMsg {
+    color: var(--danger);
+    font-size: 12px;
+    margin: -4px 0 12px;
+    min-height: 14px;
+  }
+
+  /* ---- Dashboard ---- */
+  #dashboard { display: none; flex: 1; flex-direction: column; min-height: 0; }
+  #dashboard.active { display: flex; }
+  #authScreen.hidden { display: none; }
+
+  .tabs {
+    display: flex;
+    gap: 4px;
+    padding: 10px 16px 0;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .tab {
+    padding: 8px 14px;
+    font-size: 13px;
+    color: var(--muted);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+  }
+  .tab.active { color: var(--text); border-bottom-color: var(--accent); }
+
+  .tabPane { flex: 1; display: none; min-height: 0; }
+  .tabPane.active { display: flex; flex-direction: column; }
+
+  #websiteFrame { flex: 1; border: none; background: #fff; }
+
+  #installPane { padding: 24px; overflow-y: auto; }
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px;
+    max-width: 480px;
+  }
+  .card h3 { margin: 0 0 6px; font-size: 16px; }
+  .card p { margin: 0 0 16px; color: var(--muted); font-size: 13px; }
+
+  .progressWrap { margin-top: 16px; display: none; }
+  .progressBar {
+    height: 8px;
+    background: #121216;
+    border-radius: 4px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+  }
+  .progressBar > div {
+    height: 100%;
+    width: 0%;
+    background: var(--accent);
+    transition: width .25s ease;
+  }
+  .progressLabel { margin-top: 8px; font-size: 12px; color: var(--muted); }
+
+  .hint { font-size: 11px; color: var(--muted); margin-top: 18px; }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <header>
+    <h1>Plüsch App</h1>
+    <div class="user-chip" id="userChip">
+      <span id="userLabel"></span>
+      <button class="link" onclick="logout()">Abmelden</button>
+    </div>
+  </header>
+
+  <main>
+    <!-- ===== LOGIN / REGISTER ===== -->
+    <div id="authScreen">
+      <div id="loginForm">
+        <h2>Anmelden</h2>
+        <p class="sub">Mit deinem Plüsch-Konto anmelden</p>
+        <div class="field">
+          <label>Benutzername</label>
+          <input id="loginUser" autocomplete="username">
+        </div>
+        <div class="field">
+          <label>Passwort</label>
+          <input id="loginPass" type="password" autocomplete="current-password">
+        </div>
+        <div class="errorMsg" id="loginError"></div>
+        <button class="primary" id="loginBtn" onclick="doLogin()">Anmelden</button>
+        <div class="authFooter">
+          <button class="link" onclick="showRegister()">Noch kein Konto? Registrieren</button>
+        </div>
+      </div>
+
+      <div id="registerForm" style="display:none;">
+        <h2>Konto erstellen</h2>
+        <p class="sub">Ein Konto für alle Plüsch-Produkte</p>
+        <div class="field">
+          <label>Benutzername</label>
+          <input id="regUser" autocomplete="username">
+        </div>
+        <div class="field">
+          <label>E-Mail (optional)</label>
+          <input id="regEmail" type="email" autocomplete="email">
+        </div>
+        <div class="field">
+          <label>Passwort</label>
+          <input id="regPass" type="password" autocomplete="new-password">
+        </div>
+        <div class="errorMsg" id="registerError"></div>
+        <button class="primary" id="registerBtn" onclick="doRegister()">Konto erstellen</button>
+        <div class="authFooter">
+          <button class="link" onclick="showLogin()">Schon ein Konto? Anmelden</button>
+        </div>
+      </div>
+
+      <div id="twofaForm" style="display:none;">
+        <h2>Bestätigungscode</h2>
+        <p class="sub">2FA ist für dieses Konto aktiviert</p>
+        <div class="field">
+          <label>Code aus deiner Authenticator-App</label>
+          <input id="twofaCode" autocomplete="one-time-code">
+        </div>
+        <div class="errorMsg" id="twofaError"></div>
+        <button class="primary" onclick="doTwofaVerify()">Bestätigen</button>
+      </div>
+    </div>
+
+    <!-- ===== DASHBOARD ===== -->
+    <div id="dashboard">
+      <div class="tabs">
+        <div class="tab active" data-tab="install" onclick="switchTab('install')">Plüsch Downloader</div>
+        <div class="tab" data-tab="website" onclick="switchTab('website')">Plüsch Studios</div>
+      </div>
+
+      <div class="tabPane active" id="pane-install">
+        <div id="installPane">
+          <div class="card">
+            <h3>Plüsch Downloader</h3>
+            <p>Lädt die aktuellste Version herunter und installiert sie lokal.</p>
+            <button class="primary" id="installBtn" onclick="startInstall()">Installieren</button>
+            <button class="primary" id="launchBtn" style="display:none;background:var(--ok);" onclick="launchApp()">Öffnen</button>
+            <div class="progressWrap" id="progressWrap">
+              <div class="progressBar"><div id="progressFill"></div></div>
+              <div class="progressLabel" id="progressLabel"></div>
+            </div>
+            <div class="hint">Installiert nach <code id="installPathHint"></code></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="tabPane" id="pane-website">
+        <iframe id="websiteFrame" src="about:blank"></iframe>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+const MAILBOT_URL = "https://thestupidplueschguy.pythonanywhere.com";
+const WEBSITE_URL = "https://thestupidplueschguy.github.io/Plueschi-Website/";
+
+let pendingChallenge = null;
+let pendingDevice = null;
+let pendingClient = "desktop";
+
+function show(id) {
+  ["loginForm", "registerForm", "twofaForm"].forEach(f => {
+    document.getElementById(f).style.display = (f === id) ? "block" : "none";
+  });
+}
+function showLogin() { show("loginForm"); }
+function showRegister() { show("registerForm"); }
+
+async function api(url, body) {
+  const res = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body || {}),
+  });
+  let data = {};
+  try { data = await res.json(); } catch (e) {}
+  return data;
+}
+
+function deviceName() {
+  return "Plüsch App Installer";
+}
+
+async function doLogin() {
+  const username = document.getElementById("loginUser").value.trim();
+  const password = document.getElementById("loginPass").value;
+  const errEl = document.getElementById("loginError");
+  errEl.textContent = "";
+  if (!username || !password) { errEl.textContent = "Bitte beides ausfüllen."; return; }
+
+  const btn = document.getElementById("loginBtn");
+  btn.disabled = true;
+  try {
+    const data = await api(MAILBOT_URL + "/api/login", {
+      username, password, device: deviceName(), client: "desktop",
+    });
+    if (data.requires_2fa) {
+      pendingChallenge = data.challenge;
+      pendingDevice = deviceName();
+      show("twofaForm");
+      return;
+    }
+    if (!data.success) {
+      errEl.textContent = data.error || "Anmeldung fehlgeschlagen.";
+      return;
+    }
+    onLoggedIn(data.user, data.token);
+  } catch (e) {
+    errEl.textContent = "Verbindung zum Server fehlgeschlagen.";
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+async function doTwofaVerify() {
+  const code = document.getElementById("twofaCode").value.trim();
+  const errEl = document.getElementById("twofaError");
+  if (!code) { errEl.textContent = "Code eingeben."; return; }
+  const data = await api(MAILBOT_URL + "/api/login/2fa-verify", {
+    challenge: pendingChallenge, code, device: pendingDevice, client: "desktop",
+  });
+  if (!data.success) {
+    errEl.textContent = data.error || "Code ungültig.";
+    return;
+  }
+  onLoggedIn(data.user, data.token);
+}
+
+async function doRegister() {
+  const username = document.getElementById("regUser").value.trim();
+  const email = document.getElementById("regEmail").value.trim();
+  const password = document.getElementById("regPass").value;
+  const errEl = document.getElementById("registerError");
+  errEl.textContent = "";
+  if (!username || !password) { errEl.textContent = "Benutzername und Passwort sind Pflicht."; return; }
+
+  const btn = document.getElementById("registerBtn");
+  btn.disabled = true;
+  try {
+    const data = await api(MAILBOT_URL + "/api/register", {
+      username, email, password, device: deviceName(), client: "desktop",
+    });
+    if (!data.success) {
+      errEl.textContent = data.error || "Registrierung fehlgeschlagen.";
+      return;
+    }
+    onLoggedIn(data.user, data.token);
+  } catch (e) {
+    errEl.textContent = "Verbindung zum Server fehlgeschlagen.";
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+async function onLoggedIn(user, token) {
+  await fetch("/api/session/save", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ user, token }),
+  });
+  enterDashboard(user);
+}
+
+function enterDashboard(user) {
+  document.getElementById("authScreen").classList.add("hidden");
+  document.getElementById("dashboard").classList.add("active");
+  document.getElementById("userChip").style.display = "flex";
+  document.getElementById("userLabel").textContent = user.display_name || user.username;
+  document.getElementById("websiteFrame").src = WEBSITE_URL;
+}
+
+async function logout() {
+  await fetch("/api/session/clear", { method: "POST" });
+  location.reload();
+}
+
+function switchTab(name) {
+  document.querySelectorAll(".tab").forEach(t => t.classList.toggle("active", t.dataset.tab === name));
+  document.getElementById("pane-install").classList.toggle("active", name === "install");
+  document.getElementById("pane-website").classList.toggle("active", name === "website");
+}
+
+// ---- Installation ----
+let pollTimer = null;
+
+async function startInstall() {
+  document.getElementById("installBtn").disabled = true;
+  document.getElementById("progressWrap").style.display = "block";
+  await fetch("/api/install/start", { method: "POST" });
+  pollTimer = setInterval(pollInstallProgress, 500);
+}
+
+let lastExePath = null;
+
+async function pollInstallProgress() {
+  const res = await fetch("/api/install/progress");
+  const data = await res.json();
+  document.getElementById("progressFill").style.width = (data.percent || 0) + "%";
+  document.getElementById("progressLabel").textContent = data.message || "";
+
+  if (data.status === "done") {
+    clearInterval(pollTimer);
+    document.getElementById("installBtn").style.display = "none";
+    document.getElementById("launchBtn").style.display = "inline-block";
+    lastExePath = data.exe_path;
+  } else if (data.status === "error") {
+    clearInterval(pollTimer);
+    document.getElementById("installBtn").disabled = false;
+    document.getElementById("progressLabel").textContent = data.message;
+  }
+}
+
+async function launchApp() {
+  await fetch("/api/install/launch", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ exe_path: lastExePath }),
+  });
+}
+
+// ---- Gespeicherten Login beim Start wiederherstellen ----
+(async function init() {
+  try {
+    const res = await fetch("/api/session/saved");
+    const data = await res.json();
+    if (data && data.user) {
+      enterDashboard(data.user);
+    }
+  } catch (e) {}
+})();
+</script>
+</body>
+</html>
