@@ -1,0 +1,47 @@
+name: Build Plüsch App Installer
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Versionsnummer für den öffentlichen Release (z.B. v1.0.0) - nur ausfüllen, wenn wirklich veröffentlicht werden soll'
+        required: false
+        default: ''
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Python einrichten
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Abhängigkeiten installieren
+        run: pip install flask pywebview pythonnet
+      - name: EXE bauen (onefile, ohne UPX)
+        run: |
+          pyinstaller --onefile --noupx --noconsole `
+            --name "Plüsch App" `
+            --add-data "templates;templates" `
+            app.py
+      - name: EXE als Artifact hochladen (privat, nur zum Testen)
+        uses: actions/upload-artifact@v4
+        with:
+          name: Pluesch_App_Installer_Windows
+          path: "dist/Plüsch App.exe"
+      - name: Öffentlichen Release veröffentlichen
+        if: github.event_name == 'workflow_dispatch' && inputs.version != ''
+        uses: softprops/action-gh-release@v2
+        with:
+          # Eigenes Release-Repo fürs Installer-Projekt, getrennt von plueschi-releases (PDL).
+          # Falls du lieber dasselbe Repo wie PDL nutzen willst, hier einfach
+          # "TheStupidPlueschGuy/plueschi-releases" eintragen.
+          repository: TheStupidPlueschGuy/pluesch-app-releases
+          token: ${{ secrets.PUBLIC_RELEASE_TOKEN }}
+          tag_name: ${{ inputs.version }}
+          name: "Plüsch App ${{ inputs.version }}"
+          files: "dist/Plüsch App.exe"
