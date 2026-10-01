@@ -40,7 +40,7 @@ jobs:
           # Eigenes Release-Repo fürs Installer-Projekt, getrennt von plueschi-releases (PDL).
           # Falls du lieber dasselbe Repo wie PDL nutzen willst, hier einfach
           # "TheStupidPlueschGuy/plueschi-releases" eintragen.
-          repository: TheStupidPlueschGuy/pluesch-app-releases
+          repository: TheStupidPlueschGuy/pluesch-installer-releases
           token: ${{ secrets.PUBLIC_RELEASE_TOKEN }}
           tag_name: ${{ inputs.version }}
           name: "Plüsch App ${{ inputs.version }}"
