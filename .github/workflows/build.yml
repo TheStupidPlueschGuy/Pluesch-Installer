@@ -43,10 +43,11 @@ jobs:
         if: github.event_name == 'workflow_dispatch' && inputs.version != ''
         uses: softprops/action-gh-release@v2
         with:
-          # Eigenes Release-Repo fürs Installer-Projekt, getrennt von plueschi-releases (PDL).
-          # Falls du lieber dasselbe Repo wie PDL nutzen willst, hier einfach
-          # "TheStupidPlueschGuy/plueschi-releases" eintragen.
-          repository: TheStupidPlueschGuy/pluesch-app-releases
+          # Eigenes Release-Repo fürs Installer-Projekt, getrennt von plueschi-releases (PDL) -
+          # NICHT dasselbe Repo wie PDL verwenden: /releases/latest liefert sonst mal den
+          # PDL-, mal den Launcher-Release und macht beiden Update-Checks die Versions-
+          # vergleiche kaputt. Name muss exakt zu LAUNCHER_RELEASES_API in app.py passen.
+          repository: TheStupidPlueschGuy/Pluesch-Installer-releases
           token: ${{ secrets.PUBLIC_RELEASE_TOKEN }}
           tag_name: ${{ inputs.version }}
           name: "Plüsch App ${{ inputs.version }}"
