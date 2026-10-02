@@ -606,7 +606,7 @@ move /y "{new_exe}" "{current_exe}"
 start "" "{current_exe}"
 del "%~f0"
 """
-            with open(updater_bat, "w") as f:
+            with open(updater_bat, "w", encoding="utf-8") as f:
                 f.write(bat_content)
 
             launcher_update_progress = {"status": "done", "percent": 100, "message": "Update installiert! Launcher startet neu..."}
