@@ -43,7 +43,7 @@ LAUNCHER_VERSION = _read_launcher_version()
 MAILBOT_URL = "https://thestupidplueschguy.pythonanywhere.com"
 
 # Eigenes Release-Repo des Launchers selbst (fürs Auto-Update, Feature #1).
-LAUNCHER_RELEASES_API = "https://api.github.com/repos/TheStupidPlueschGuy/pluesch-installer-releases/releases/latest"
+LAUNCHER_RELEASES_API = "https://api.github.com/repos/TheStupidPlueschGuy/Pluesch-Installer-releases/releases/latest"
 
 # Zielordner für alle installierten Plüsch-Produkte (kein Admin/UAC nötig, da im User-Profil).
 INSTALL_ROOT = os.path.join(os.environ.get("LOCALAPPDATA", os.path.expanduser("~")), "Plüsch Studios")
