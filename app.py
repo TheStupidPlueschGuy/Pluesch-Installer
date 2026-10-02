@@ -14,7 +14,30 @@ from werkzeug.exceptions import HTTPException
 app = Flask(__name__)
 
 # ===== KONFIGURATION =====
-LAUNCHER_VERSION = "1.0.0"  # bei jedem Release in build.yml als Tag mitgeben (z.B. v1.0.0)
+def _read_launcher_version():
+    """
+    Liest die echte Launcher-Version aus version.txt statt sie hart im Code
+    zu pflegen. build-installer.yml schreibt diese Datei bei jedem Release
+    aus dem Workflow-Input ("version") und packt sie per --add-data mit in
+    die .exe - so stimmt LAUNCHER_VERSION nach einem Release-Build endlich
+    mit dem tatsächlich getaggten Release ueberein, statt für immer auf dem
+    hier einmal eingetragenen Wert stehen zu bleiben.
+
+    Im Dev-Modus (direkt mit "python app.py" gestartet, keine version.txt
+    vorhanden) wird "dev" verwendet - das sorgt dafür, dass der Update-Check
+    (latest_tag != LAUNCHER_VERSION) im Dev-Modus immer "Update verfügbar"
+    anzeigt, was dort auch korrekt ist.
+    """
+    base = getattr(sys, "_MEIPASS", os.path.dirname(os.path.abspath(__file__)))
+    version_file = os.path.join(base, "version.txt")
+    try:
+        with open(version_file, "r", encoding="utf-8") as f:
+            value = f.read().strip().lstrip("vV").lstrip(".")
+            return value or "dev"
+    except Exception:
+        return "dev"
+
+LAUNCHER_VERSION = _read_launcher_version()
 
 # Mailbot-Backend (Account-System) - dasselbe, das auch admin.html/support.html nutzt.
 MAILBOT_URL = "https://thestupidplueschguy.pythonanywhere.com"
