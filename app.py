@@ -46,6 +46,52 @@ def _get_product(product_id):
 def _product_exe_path(product):
     return os.path.join(INSTALL_ROOT, product["install_subdir"], product["exe_name"])
 
+
+def _download_with_retry(url, dest_path, progress_cb=None, max_retries=3, timeout=30):
+    """
+    Lädt eine Datei robust herunter - ersetzt urllib.request.urlretrieve, das
+    weder einen User-Agent-Header setzt noch bei einem abgebrochenen Download
+    (z.B. WinError 10054 'Verbindung vom Remotehost geschlossen', öfter bei
+    GitHubs Release-CDN) automatisch erneut versucht. Schreibt in eine
+    temporäre Datei und benennt erst nach vollständigem, erfolgreichem
+    Download um, damit bei einem Abbruch nie eine halbe .exe liegen bleibt.
+
+    progress_cb(downloaded_bytes, total_bytes) wird während des Downloads
+    wiederholt aufgerufen, falls übergeben.
+    """
+    last_err = None
+    tmp_path = dest_path + ".part"
+    for attempt in range(1, max_retries + 1):
+        try:
+            req = urllib.request.Request(url, headers={
+                "User-Agent": "Pluesch-Studios-Launcher",
+                "Accept": "application/octet-stream",
+            })
+            downloaded = 0
+            with urllib.request.urlopen(req, timeout=timeout) as resp:
+                total = int(resp.headers.get("Content-Length", 0) or 0)
+                with open(tmp_path, "wb") as out:
+                    while True:
+                        chunk = resp.read(262144)  # 256 KB
+                        if not chunk:
+                            break
+                        out.write(chunk)
+                        downloaded += len(chunk)
+                        if progress_cb:
+                            progress_cb(downloaded, total)
+            shutil.move(tmp_path, dest_path)
+            return
+        except Exception as e:
+            last_err = e
+            try:
+                if os.path.exists(tmp_path):
+                    os.remove(tmp_path)
+            except Exception:
+                pass
+            if attempt < max_retries:
+                time.sleep(2 * attempt)  # kurz warten, bevor erneut versucht wird
+    raise last_err
+
 # install_progress / launcher_update_progress sind je Produkt- bzw. Launcher-weit,
 # da pro Produkt immer nur eine Aktion gleichzeitig laufen kann.
 install_progress = {}        # product_id -> {status, percent, message, exe_path}
@@ -359,15 +405,13 @@ def install_start():
 
             install_progress[product_id] = {"status": "downloading", "percent": 5, "message": f"Lade {product['name']} herunter..."}
 
-            def report(block, block_size, total):
+            def report(downloaded, total):
                 if total > 0:
-                    pct = 5 + min(85, int(block * block_size / total * 85))
+                    pct = 5 + min(85, int(downloaded / total * 85))
                     install_progress[product_id]["percent"] = pct
                     install_progress[product_id]["message"] = f"Lade herunter... {pct}%"
 
-            tmp_path = exe_path + ".download"
-            urllib.request.urlretrieve(asset_url, tmp_path, reporthook=report)
-            shutil.move(tmp_path, exe_path)  # erst nach vollständigem Download ersetzen
+            _download_with_retry(asset_url, exe_path, progress_cb=report)
 
             install_progress[product_id] = {"status": "shortcut", "percent": 95, "message": "Erstelle Verknüpfung..."}
             _create_shortcut(exe_path, product["shortcut_name"])
@@ -474,7 +518,11 @@ def launcher_check_update():
         with urllib.request.urlopen(req, timeout=15) as resp:
             release = json.loads(resp.read().decode("utf-8"))
 
-        latest_tag = (release.get("tag_name") or "").lstrip("v")
+        # .lstrip("v") strippt nur Kleinbuchstaben - ein Tag wie "V.0.0.2" (Großbuchstabe
+        # oder zusätzliche Punkte beim Release-Erstellen vertippt) blieb sonst unverändert
+        # und wurde dann als "vV.0.0.2" angezeigt. Erst alle führenden v/V entfernen, dann
+        # überzählige Punkte am Anfang (falls z.B. "V.0.0.2" statt "v0.0.2" getaggt wurde).
+        latest_tag = (release.get("tag_name") or "").lstrip("vV").lstrip(".")
         asset = next((a for a in release.get("assets", []) if a.get("name", "").endswith(".exe")), None)
 
         update_available = bool(latest_tag) and latest_tag != LAUNCHER_VERSION and asset is not None
@@ -518,13 +566,13 @@ def launcher_update_start():
 
             launcher_update_progress = {"status": "downloading", "percent": 0, "message": "Lade neue Version herunter..."}
 
-            def report(block, block_size, total):
+            def report(downloaded, total):
                 if total > 0:
-                    pct = min(95, int(block * block_size / total * 100))
+                    pct = min(95, int(downloaded / total * 100))
                     launcher_update_progress["percent"] = pct
                     launcher_update_progress["message"] = f"Lade herunter... {pct}%"
 
-            urllib.request.urlretrieve(asset_url, new_exe, reporthook=report)
+            _download_with_retry(asset_url, new_exe, progress_cb=report)
 
             launcher_update_progress = {"status": "installing", "percent": 97, "message": "Installiere Update..."}
 
