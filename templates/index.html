@@ -2,49 +2,88 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<title>Plüsch App</title>
+<title>Plüsch Studios Launcher</title>
 <style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap');
+
   :root {
-    --bg: #15151a;
-    --panel: #1d1d24;
-    --border: #2c2c35;
-    --text: #eee;
-    --muted: #9a9aa5;
-    --accent: #e8a33d; /* schlicht gehalten - Gold/Amber als Platzhalter-Akzent */
-    --danger: #e05a5a;
-    --ok: #4caf7d;
+    --c1: #7c3aed; --c2: #db2777;
+    --c1-light: #a78bfa; --c2-light: #ec4899;
+    --glow1: rgba(139,92,246,0.15); --glow2: rgba(236,72,153,0.12);
+    --danger: #f87171; --ok: #4ade80;
   }
   * { box-sizing: border-box; }
   body {
     margin: 0;
-    font-family: "Segoe UI", system-ui, sans-serif;
-    background: var(--bg);
-    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    background: #0a0a0f;
+    color: #fff;
     height: 100vh;
     overflow: hidden;
   }
-  #app { display: flex; flex-direction: column; height: 100vh; }
+  body.light { background: #f0f0f5; color: #1a1a2e; }
+
+  .bg-glow {
+    position: fixed; inset: 0;
+    background:
+      radial-gradient(ellipse 60% 40% at 20% 50%, var(--glow1) 0%, transparent 70%),
+      radial-gradient(ellipse 50% 40% at 80% 50%, var(--glow2) 0%, transparent 70%);
+    pointer-events: none; z-index: 0;
+  }
+  body.light .bg-glow { opacity: .4; }
+
+  #app { display: flex; flex-direction: column; height: 100vh; position: relative; z-index: 1; }
+
+  /* ---- Update-Banner (Feature #1) ---- */
+  #updateBanner {
+    display: none;
+    padding: 10px 20px;
+    background: linear-gradient(135deg, rgba(124,58,237,0.25), rgba(219,39,119,0.2));
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+    font-size: 13px;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+  }
+  #updateBanner.show { display: flex; }
+  #updateBanner button.primary { width: auto; padding: 7px 16px; font-size: 12px; }
 
   header {
     padding: 14px 20px;
-    border-bottom: 1px solid var(--border);
+    border-bottom: 1px solid rgba(255,255,255,0.07);
     display: flex;
     align-items: center;
     justify-content: space-between;
     flex-shrink: 0;
     -webkit-app-region: drag;
   }
-  header h1 { font-size: 16px; margin: 0; font-weight: 600; letter-spacing: .3px; }
+  body.light header { border-bottom-color: rgba(0,0,0,0.1); }
+  header h1 {
+    font-size: 16px; margin: 0; font-weight: 900; letter-spacing: .3px;
+    background: linear-gradient(135deg, var(--c1-light), var(--c2-light));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  }
   header .user-chip {
     font-size: 13px;
-    color: var(--muted);
+    color: rgba(255,255,255,0.45);
     display: none;
     align-items: center;
-    gap: 10px;
+    gap: 14px;
   }
-  header .user-chip button {
+  body.light header .user-chip { color: rgba(0,0,0,0.5); }
+  header .user-chip button { -webkit-app-region: no-drag; }
+
+  .theme-toggle {
     -webkit-app-region: no-drag;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 999px;
+    width: 32px; height: 32px;
+    cursor: pointer;
+    font-size: 14px;
+    color: rgba(255,255,255,0.6);
   }
+  body.light .theme-toggle { background: rgba(0,0,0,0.06); border-color: rgba(0,0,0,0.12); color: rgba(0,0,0,0.55); }
 
   main { flex: 1; overflow: hidden; display: flex; }
 
@@ -52,50 +91,98 @@
   #authScreen {
     margin: auto;
     width: 340px;
-    background: var(--panel);
-    border: 1px solid var(--border);
-    border-radius: 10px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 20px;
     padding: 28px;
   }
-  #authScreen h2 { margin: 0 0 4px; font-size: 20px; }
-  #authScreen p.sub { margin: 0 0 20px; color: var(--muted); font-size: 13px; }
+  body.light #authScreen { background: rgba(255,255,255,0.8); border-color: rgba(0,0,0,0.1); }
+  #authScreen h2 { margin: 0 0 4px; font-size: 20px; font-weight: 700; }
+  #authScreen p.sub { margin: 0 0 20px; color: rgba(255,255,255,0.4); font-size: 13px; }
+  body.light #authScreen p.sub { color: rgba(0,0,0,0.4); }
+
   .field { margin-bottom: 14px; }
-  .field label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 5px; }
+  .field label {
+    display: block; font-size: 11px; font-weight: 600; text-transform: uppercase;
+    letter-spacing: .5px; color: rgba(255,255,255,0.45); margin-bottom: 6px;
+  }
+  body.light .field label { color: rgba(0,0,0,0.5); }
   .field input {
     width: 100%;
-    padding: 9px 10px;
-    background: #121216;
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    color: var(--text);
+    padding: 11px 13px;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 10px;
+    color: #fff;
     font-size: 14px;
+    font-family: 'Inter', sans-serif;
+    outline: none;
+    transition: all .2s;
   }
-  .field input:focus { outline: none; border-color: var(--accent); }
+  body.light .field input { background: rgba(0,0,0,0.06); border-color: rgba(0,0,0,0.12); color: #1a1a2e; }
+  .field input:focus { border-color: var(--c1-light); background: rgba(255,255,255,0.08); }
+  body.light .field input:focus { background: rgba(0,0,0,0.08); }
 
   button.primary {
     width: 100%;
-    padding: 10px;
-    background: var(--accent);
+    padding: 12px;
+    background: linear-gradient(135deg, var(--c1), var(--c2));
     border: none;
-    border-radius: 6px;
-    color: #1a1a1a;
-    font-weight: 600;
+    border-radius: 10px;
+    color: #fff;
+    font-weight: 700;
     font-size: 14px;
+    font-family: 'Inter', sans-serif;
+    cursor: pointer;
+    transition: all .2s;
+  }
+  button.primary:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 8px 30px rgba(124,58,237,0.4); }
+  button.primary:disabled { opacity: .5; cursor: default; transform: none; }
+  button.secondary {
+    padding: 10px 16px;
+    background: rgba(255,255,255,0.07);
+    color: rgba(255,255,255,0.75);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 10px;
+    font-weight: 600;
+    font-size: 13px;
+    font-family: 'Inter', sans-serif;
     cursor: pointer;
   }
-  button.primary:disabled { opacity: .6; cursor: default; }
+  button.secondary:hover { background: rgba(255,255,255,0.11); }
+  body.light button.secondary { background: rgba(0,0,0,0.06); color: rgba(0,0,0,0.65); border-color: rgba(0,0,0,0.12); }
+  button.danger-outline {
+    padding: 8px 14px;
+    background: none;
+    border: 1px solid rgba(248,113,113,0.4);
+    color: var(--danger);
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    font-family: 'Inter', sans-serif;
+    cursor: pointer;
+  }
+  button.danger-outline:hover { background: rgba(248,113,113,0.1); }
   button.link {
     background: none;
     border: none;
-    color: var(--muted);
+    color: rgba(255,255,255,0.45);
     font-size: 12px;
     cursor: pointer;
     text-decoration: underline;
     padding: 0;
+    font-family: 'Inter', sans-serif;
   }
-  .authFooter { margin-top: 14px; text-align: center; }
+  body.light button.link { color: rgba(0,0,0,0.5); }
+  .authFooter { margin-top: 14px; text-align: center; display: flex; flex-direction: column; gap: 8px; }
   .errorMsg {
     color: var(--danger);
+    font-size: 12px;
+    margin: -4px 0 12px;
+    min-height: 14px;
+  }
+  .okMsg {
+    color: var(--ok);
     font-size: 12px;
     margin: -4px 0 12px;
     min-height: 14px;
@@ -110,138 +197,464 @@
     display: flex;
     gap: 4px;
     padding: 10px 16px 0;
-    border-bottom: 1px solid var(--border);
+    border-bottom: 1px solid rgba(255,255,255,0.07);
     flex-shrink: 0;
   }
+  body.light .tabs { border-bottom-color: rgba(0,0,0,0.1); }
   .tab {
     padding: 8px 14px;
     font-size: 13px;
-    color: var(--muted);
+    font-weight: 600;
+    color: rgba(255,255,255,0.45);
     cursor: pointer;
     border-bottom: 2px solid transparent;
   }
-  .tab.active { color: var(--text); border-bottom-color: var(--accent); }
+  body.light .tab { color: rgba(0,0,0,0.45); }
+  .tab.active { color: #fff; border-bottom-color: var(--c1-light); }
+  body.light .tab.active { color: var(--c1); }
 
   .tabPane { flex: 1; display: none; min-height: 0; }
   .tabPane.active { display: flex; flex-direction: column; }
 
   #websiteFrame { flex: 1; border: none; background: #fff; }
 
-  #installPane { padding: 24px; overflow-y: auto; }
+  #installPane, #accountPane { padding: 24px; overflow-y: auto; }
   .card {
-    background: var(--panel);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 20px;
-    max-width: 480px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 20px;
+    padding: 28px;
+    max-width: 520px;
+    margin-bottom: 20px;
   }
-  .card h3 { margin: 0 0 6px; font-size: 16px; }
-  .card p { margin: 0 0 16px; color: var(--muted); font-size: 13px; }
+  body.light .card { background: rgba(255,255,255,0.8); border-color: rgba(0,0,0,0.1); }
+  .card h3 { margin: 0 0 6px; font-size: 18px; font-weight: 700; }
+  .card p { margin: 0 0 16px; color: rgba(255,255,255,0.45); font-size: 13px; }
+  body.light .card p { color: rgba(0,0,0,0.45); }
+  .card .btn-row { display: flex; gap: 10px; flex-wrap: wrap; }
+  .card .btn-row button.primary { width: auto; flex: 1; min-width: 120px; }
 
   .progressWrap { margin-top: 16px; display: none; }
   .progressBar {
     height: 8px;
-    background: #121216;
-    border-radius: 4px;
+    background: rgba(255,255,255,0.07);
+    border-radius: 999px;
     overflow: hidden;
-    border: 1px solid var(--border);
   }
+  body.light .progressBar { background: rgba(0,0,0,0.08); }
   .progressBar > div {
     height: 100%;
     width: 0%;
-    background: var(--accent);
-    transition: width .25s ease;
+    background: linear-gradient(90deg, var(--c1), var(--c2));
+    border-radius: 999px;
+    transition: width .3s ease;
   }
-  .progressLabel { margin-top: 8px; font-size: 12px; color: var(--muted); }
+  .progressLabel { margin-top: 8px; font-size: 12px; color: rgba(255,255,255,0.4); }
+  body.light .progressLabel { color: rgba(0,0,0,0.45); }
 
-  .hint { font-size: 11px; color: var(--muted); margin-top: 18px; }
+  .hint { font-size: 11px; color: rgba(255,255,255,0.35); margin-top: 18px; }
+  body.light .hint { color: rgba(0,0,0,0.4); }
+
+  /* ---- Account-Tab ---- */
+  .setting-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 0; border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+  body.light .setting-row { border-bottom-color: rgba(0,0,0,0.08); }
+  .setting-row:last-child { border-bottom: none; }
+  .setting-label { font-size: 14px; font-weight: 600; }
+  .setting-sub { font-size: 12px; color: rgba(255,255,255,0.35); margin-top: 2px; }
+  body.light .setting-sub { color: rgba(0,0,0,0.4); }
+
+  .device-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 14px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 12px; margin-bottom: 8px;
+  }
+  body.light .device-row { background: rgba(0,0,0,0.04); border-color: rgba(0,0,0,0.08); }
+  .device-title { font-size: 13px; font-weight: 700; }
+  .device-meta { font-size: 11px; color: rgba(255,255,255,0.35); margin-top: 2px; }
+  body.light .device-meta { color: rgba(0,0,0,0.4); }
+  .badge-current {
+    display: inline-block; margin-left: 8px; font-size: 10px; font-weight: 700;
+    background: rgba(74,222,128,0.2); color: var(--ok); border-radius: 999px; padding: 2px 8px;
+  }
+
+  .code-display {
+    background: rgba(139,92,246,0.08); border: 1px dashed rgba(139,92,246,0.3);
+    border-radius: 12px; padding: 14px 16px; font-family: monospace; font-size: 13px;
+    line-height: 1.8; margin: 14px 0; word-break: break-all;
+  }
+  .qr-box { text-align: center; margin: 14px 0; }
+  .qr-box img { border-radius: 12px; background: #fff; padding: 10px; }
+
+  /* ---- Toggle-Switch (Feature #14) ---- */
+  .toggle { width: 44px; height: 24px; border-radius: 999px; background: rgba(255,255,255,0.1); border: none; cursor: pointer; position: relative; transition: all .2s; flex-shrink: 0; }
+  body.light .toggle { background: rgba(0,0,0,0.12); }
+  .toggle.on { background: linear-gradient(135deg, var(--c1), var(--c2)); }
+  .toggle::after { content: ''; position: absolute; width: 18px; height: 18px; border-radius: 50%; background: #fff; top: 3px; left: 3px; transition: all .2s; }
+  .toggle.on::after { left: 23px; }
+
+  /* ---- Stat-Grid (Feature #11) ---- */
+  .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .stat-box { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; padding: 16px; }
+  body.light .stat-box { background: rgba(255,255,255,0.8); border-color: rgba(0,0,0,0.1); }
+  .stat-val { font-size: 28px; font-weight: 900; background: linear-gradient(135deg, var(--c1-light), var(--c2-light)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+  .stat-label { font-size: 11px; color: rgba(255,255,255,0.4); margin-top: 2px; }
+  body.light .stat-label { color: rgba(0,0,0,0.45); }
+
+  /* ---- Verlauf (Feature #17) ---- */
+  #historyPane { padding: 24px; overflow-y: auto; }
+  .history-item { display: flex; align-items: center; gap: 14px; padding: 12px 14px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; margin-bottom: 8px; }
+  body.light .history-item { background: rgba(0,0,0,0.04); border-color: rgba(0,0,0,0.08); }
+  .history-thumb { width: 72px; height: 42px; object-fit: cover; border-radius: 6px; background: rgba(255,255,255,0.05); flex-shrink: 0; }
+  .history-info { flex: 1; min-width: 0; }
+  .history-title { font-size: 13px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .history-meta { font-size: 11px; color: rgba(255,255,255,0.35); margin-top: 3px; }
+  body.light .history-meta { color: rgba(0,0,0,0.4); }
+
+  /* ---- Offline-Banner (Feature #15) ---- */
+  #offlineBanner {
+    display: none; padding: 10px 20px; background: rgba(248,113,113,0.15);
+    border-bottom: 1px solid rgba(248,113,113,0.3); font-size: 13px; flex-shrink: 0;
+    text-align: center; color: var(--danger); font-weight: 600;
+  }
+  #offlineBanner.show { display: block; }
+
+  /* ---- "Was ist neu"-Popup (Feature #19) ---- */
+  #whatsNewOverlay {
+    display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.55);
+    z-index: 1100; align-items: center; justify-content: center;
+  }
+  #whatsNewOverlay.show { display: flex; }
+  .whatsnew-box {
+    width: 420px; max-width: 90vw;
+    background: #15151a; border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 18px; padding: 26px; box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+  }
+  body.light .whatsnew-box { background: #fff; border-color: rgba(0,0,0,0.12); }
+  .whatsnew-box h2 { margin: 0 0 4px; font-size: 18px; }
+  .whatsnew-box p.sub { margin: 0 0 16px; color: rgba(255,255,255,0.4); font-size: 12px; }
+  body.light .whatsnew-box p.sub { color: rgba(0,0,0,0.45); }
+  .whatsnew-box ul { margin: 0 0 20px; padding-left: 20px; font-size: 13px; line-height: 1.8; }
+
+  /* ---- Backup/Restore (Feature #20) ---- */
+  .backup-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 0; }
+  .backup-row select {
+    flex: 1; padding: 8px 10px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 8px; color: #fff; font-family: 'Inter', sans-serif; font-size: 12px;
+  }
+  body.light .backup-row select { background: rgba(0,0,0,0.06); border-color: rgba(0,0,0,0.12); color: #1a1a2e; }
+
+  /* ---- Command Palette (Strg+K) ---- */
+  #cmdkOverlay {
+    display: none;
+    position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+    z-index: 1000; align-items: flex-start; justify-content: center;
+    padding-top: 100px;
+  }
+  #cmdkOverlay.show { display: flex; }
+  .cmdk-box {
+    width: 480px; max-width: 90vw;
+    background: #15151a; border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 14px; overflow: hidden;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+  }
+  body.light .cmdk-box { background: #fff; border-color: rgba(0,0,0,0.12); }
+  .cmdk-box input {
+    width: 100%; padding: 16px 18px; background: none; border: none;
+    border-bottom: 1px solid rgba(255,255,255,0.1); color: #fff;
+    font-size: 15px; font-family: 'Inter', sans-serif; outline: none;
+  }
+  body.light .cmdk-box input { color: #1a1a2e; border-bottom-color: rgba(0,0,0,0.1); }
+  .cmdk-results { max-height: 300px; overflow-y: auto; padding: 6px; }
+  .cmdk-item {
+    padding: 10px 14px; border-radius: 8px; cursor: pointer; font-size: 13px;
+    color: rgba(255,255,255,0.75);
+  }
+  body.light .cmdk-item { color: rgba(0,0,0,0.75); }
+  .cmdk-item:hover, .cmdk-item.sel { background: rgba(139,92,246,0.18); color: #fff; }
+  body.light .cmdk-item:hover, body.light .cmdk-item.sel { color: #1a1a2e; }
 </style>
 </head>
 <body>
+<div class="bg-glow"></div>
+
+<div id="cmdkOverlay" onclick="if(event.target===this) closeCmdk()">
+  <div class="cmdk-box">
+    <input id="cmdkInput" placeholder="Befehl suchen... (z.B. 'Account', 'Theme')" oninput="renderCmdkResults()" onkeydown="cmdkKeydown(event)">
+    <div class="cmdk-results" id="cmdkResults"></div>
+  </div>
+</div>
+
+<div id="whatsNewOverlay">
+  <div class="whatsnew-box">
+    <h2 data-i18n="whatsnew_title">🚀 Was ist neu</h2>
+    <p class="sub" id="whatsNewVersion"></p>
+    <ul id="whatsNewList"></ul>
+    <button class="primary" onclick="closeWhatsNew()" data-i18n="btn_whatsnew_ok">Alles klar</button>
+  </div>
+</div>
+
 <div id="app">
 
+  <div id="updateBanner">
+    <span id="updateBannerText">🚀 Update verfügbar</span>
+    <button class="primary" id="updateBannerBtn" onclick="startLauncherUpdate()">Jetzt aktualisieren</button>
+  </div>
+
+  <div id="offlineBanner">⚠️ Keine Verbindung zum Server — einige Funktionen sind gerade nicht verfügbar.</div>
+
   <header>
-    <h1>Plüsch App</h1>
+    <h1>Plüsch Studios Launcher</h1>
     <div class="user-chip" id="userChip">
       <span id="userLabel"></span>
-      <button class="link" onclick="logout()">Abmelden</button>
+      <button class="link" onclick="logout()" data-i18n="link_logout">Abmelden</button>
     </div>
+    <button class="theme-toggle" id="langToggle" onclick="toggleLanguage()" title="Sprache wechseln">DE</button>
+    <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()" title="Hell/Dunkel umschalten">🌙</button>
   </header>
 
   <main>
     <!-- ===== LOGIN / REGISTER ===== -->
     <div id="authScreen">
       <div id="loginForm">
-        <h2>Anmelden</h2>
-        <p class="sub">Mit deinem Plüsch-Konto anmelden</p>
+        <h2 data-i18n="login_title">Anmelden</h2>
+        <p class="sub" data-i18n="login_sub">Mit deinem Plüsch-Konto anmelden</p>
         <div class="field">
-          <label>Benutzername</label>
+          <label data-i18n="label_username">Benutzername</label>
           <input id="loginUser" autocomplete="username">
         </div>
         <div class="field">
-          <label>Passwort</label>
+          <label data-i18n="label_password">Passwort</label>
           <input id="loginPass" type="password" autocomplete="current-password">
         </div>
         <div class="errorMsg" id="loginError"></div>
-        <button class="primary" id="loginBtn" onclick="doLogin()">Anmelden</button>
+        <button class="primary" id="loginBtn" onclick="doLogin()" data-i18n="btn_login">Anmelden</button>
         <div class="authFooter">
-          <button class="link" onclick="showRegister()">Noch kein Konto? Registrieren</button>
+          <button class="link" onclick="showRegister()" data-i18n="link_register">Noch kein Konto? Registrieren</button>
+          <button class="link" onclick="showForgot()" data-i18n="link_forgot">Passwort vergessen?</button>
         </div>
       </div>
 
       <div id="registerForm" style="display:none;">
-        <h2>Konto erstellen</h2>
-        <p class="sub">Ein Konto für alle Plüsch-Produkte</p>
+        <h2 data-i18n="register_title">Konto erstellen</h2>
+        <p class="sub" data-i18n="register_sub">Ein Konto für alle Plüsch-Produkte</p>
         <div class="field">
-          <label>Benutzername</label>
+          <label data-i18n="label_username">Benutzername</label>
           <input id="regUser" autocomplete="username">
         </div>
         <div class="field">
-          <label>E-Mail (optional)</label>
+          <label data-i18n="label_email_optional">E-Mail (optional)</label>
           <input id="regEmail" type="email" autocomplete="email">
         </div>
         <div class="field">
-          <label>Passwort</label>
+          <label data-i18n="label_password">Passwort</label>
           <input id="regPass" type="password" autocomplete="new-password">
         </div>
         <div class="errorMsg" id="registerError"></div>
-        <button class="primary" id="registerBtn" onclick="doRegister()">Konto erstellen</button>
+        <button class="primary" id="registerBtn" onclick="doRegister()" data-i18n="btn_register">Konto erstellen</button>
         <div class="authFooter">
-          <button class="link" onclick="showLogin()">Schon ein Konto? Anmelden</button>
+          <button class="link" onclick="showLogin()" data-i18n="link_login">Schon ein Konto? Anmelden</button>
         </div>
       </div>
 
       <div id="twofaForm" style="display:none;">
-        <h2>Bestätigungscode</h2>
-        <p class="sub">2FA ist für dieses Konto aktiviert</p>
+        <h2 data-i18n="twofa_title">Bestätigungscode</h2>
+        <p class="sub" data-i18n="twofa_sub">2FA ist für dieses Konto aktiviert</p>
         <div class="field">
-          <label>Code aus deiner Authenticator-App</label>
+          <label data-i18n="label_twofa_code">Code aus deiner Authenticator-App</label>
           <input id="twofaCode" autocomplete="one-time-code">
         </div>
         <div class="errorMsg" id="twofaError"></div>
-        <button class="primary" onclick="doTwofaVerify()">Bestätigen</button>
+        <button class="primary" onclick="doTwofaVerify()" data-i18n="btn_confirm">Bestätigen</button>
+      </div>
+
+      <div id="forgotForm" style="display:none;">
+        <h2 data-i18n="forgot_title">Passwort vergessen</h2>
+        <p class="sub" id="forgotSub" data-i18n="forgot_sub">Gib deine E-Mail ein, wir schicken dir einen Code</p>
+
+        <div id="forgotStepEmail">
+          <div class="field">
+            <label data-i18n="label_email">E-Mail</label>
+            <input id="forgotEmail" type="email" autocomplete="email">
+          </div>
+          <div class="errorMsg" id="forgotError"></div>
+          <button class="primary" id="forgotSendBtn" onclick="sendResetCode()" data-i18n="btn_send_code">Code senden</button>
+        </div>
+
+        <div id="forgotStepReset" style="display:none;">
+          <div class="field">
+            <label data-i18n="label_code_email">Code aus der E-Mail</label>
+            <input id="forgotCode" autocomplete="one-time-code">
+          </div>
+          <div class="field">
+            <label data-i18n="label_new_password">Neues Passwort</label>
+            <input id="forgotNewPass" type="password" autocomplete="new-password">
+          </div>
+          <div class="errorMsg" id="forgotResetError"></div>
+          <button class="primary" id="forgotResetBtn" onclick="doPasswordReset()" data-i18n="btn_reset_password">Passwort zurücksetzen</button>
+        </div>
+
+        <div class="authFooter">
+          <button class="link" onclick="showLogin()" data-i18n="link_back_login">Zurück zum Login</button>
+        </div>
       </div>
     </div>
 
     <!-- ===== DASHBOARD ===== -->
     <div id="dashboard">
       <div class="tabs">
-        <div class="tab active" data-tab="install" onclick="switchTab('install')">Plüsch Downloader</div>
-        <div class="tab" data-tab="website" onclick="switchTab('website')">Plüsch Studios</div>
+        <div class="tab active" data-tab="install" onclick="switchTab('install')" data-i18n="tab_products">Plüsch Produkte</div>
+        <div class="tab" data-tab="account" onclick="switchTab('account')" data-i18n="tab_account">Account</div>
+        <div class="tab" data-tab="history" onclick="switchTab('history')" data-i18n="tab_history">Verlauf</div>
+        <div class="tab" data-tab="website" onclick="switchTab('website')" data-i18n="tab_website">Plüsch Studios</div>
       </div>
 
+      <!-- ---- Produkte (Feature #4, #5) ---- -->
       <div class="tabPane active" id="pane-install">
         <div id="installPane">
+          <div id="productList"></div>
+        </div>
+      </div>
+
+      <!-- ---- Account (Feature #2, #12) ---- -->
+      <div class="tabPane" id="pane-account">
+        <div id="accountPane">
           <div class="card">
-            <h3>Plüsch Downloader</h3>
-            <p>Lädt die aktuellste Version herunter und installiert sie lokal.</p>
-            <button class="primary" id="installBtn" onclick="startInstall()">Installieren</button>
-            <button class="primary" id="launchBtn" style="display:none;background:var(--ok);" onclick="launchApp()">Öffnen</button>
-            <div class="progressWrap" id="progressWrap">
-              <div class="progressBar"><div id="progressFill"></div></div>
-              <div class="progressLabel" id="progressLabel"></div>
+            <h3 data-i18n="account_stats_title">Übersicht</h3>
+            <div class="stat-grid">
+              <div class="stat-box">
+                <div class="stat-val" id="statPlan">-</div>
+                <div class="stat-label" data-i18n="stat_plan">Tarif</div>
+              </div>
+              <div class="stat-box">
+                <div class="stat-val" id="statDevices">-</div>
+                <div class="stat-label" data-i18n="stat_devices">Geräte</div>
+              </div>
+              <div class="stat-box">
+                <div class="stat-val" id="statDownloads">-</div>
+                <div class="stat-label" data-i18n="stat_downloads">Downloads (PDL)</div>
+              </div>
+              <div class="stat-box">
+                <div class="stat-val" id="statJoined">-</div>
+                <div class="stat-label" data-i18n="stat_joined">Mitglied seit</div>
+              </div>
             </div>
-            <div class="hint">Installiert nach <code id="installPathHint"></code></div>
+            <div class="btn-row" style="margin-top:16px;">
+              <button class="secondary" onclick="openPricing()" data-i18n="btn_upgrade">Tarif ansehen / upgraden</button>
+            </div>
+          </div>
+
+          <div class="card">
+            <h3 data-i18n="account_launcher_title">Launcher-Einstellungen</h3>
+            <div class="setting-row">
+              <div>
+                <div class="setting-label" data-i18n="setting_autostart">Mit Windows starten</div>
+                <div class="setting-sub" data-i18n="setting_autostart_sub">Startet den Launcher minimiert im Tray beim Hochfahren</div>
+              </div>
+              <button class="toggle" id="autostartToggle" onclick="toggleAutostart()"></button>
+            </div>
+            <div class="setting-row">
+              <div>
+                <div class="setting-label" data-i18n="setting_crash">Anonyme Fehlerberichte senden</div>
+                <div class="setting-sub" data-i18n="setting_crash_sub">Hilft uns, Abstürze zu erkennen — ganz ohne Nutzerdaten, nur mit deiner Zustimmung</div>
+              </div>
+              <button class="toggle" id="crashToggle" onclick="toggleCrashReports()"></button>
+            </div>
+          </div>
+
+          <div class="card">
+            <h3 data-i18n="account_backup_title">Einstellungen sichern</h3>
+            <p data-i18n="account_backup_sub">Sichert Theme, Sprache und diese Schalter lokal — unabhängig von deinem Konto.</p>
+            <div class="btn-row">
+              <button class="secondary" onclick="createBackup()" data-i18n="btn_backup_create">Backup erstellen</button>
+            </div>
+            <div class="backup-row">
+              <select id="backupSelect"></select>
+              <button class="secondary" onclick="restoreBackup()" data-i18n="btn_backup_restore">Wiederherstellen</button>
+            </div>
+            <div class="okMsg" id="backupOk"></div>
+          </div>
+
+          <div class="card">
+            <h3 data-i18n="account_profile_title">Profil</h3>
+            <div class="field">
+              <label data-i18n="label_display_name">Anzeigename</label>
+              <input id="profDisplayName">
+            </div>
+            <div class="field">
+              <label data-i18n="label_email">E-Mail</label>
+              <input id="profEmail" type="email">
+            </div>
+            <div class="field">
+              <label data-i18n="label_bio">Bio</label>
+              <input id="profBio">
+            </div>
+            <div class="errorMsg" id="profError"></div>
+            <div class="okMsg" id="profOk"></div>
+            <button class="primary" style="width:auto;" onclick="saveProfile()" data-i18n="btn_save">Speichern</button>
+          </div>
+
+          <div class="card">
+            <h3 data-i18n="account_2fa_title">Zwei-Faktor-Authentifizierung</h3>
+            <div id="twofaStatusOff" style="display:none;">
+              <p data-i18n="twofa_off_text">2FA ist für dein Konto nicht aktiv.</p>
+              <button class="primary" style="width:auto;" onclick="start2FASetup()" data-i18n="btn_2fa_enable">2FA aktivieren</button>
+            </div>
+            <div id="twofaStatusOn" style="display:none;">
+              <p data-i18n="twofa_on_text">2FA ist aktiv — dein Konto ist zusätzlich geschützt.</p>
+              <div class="btn-row">
+                <button class="secondary" onclick="regenerateBackupCodes()" data-i18n="btn_regen_codes">Backup-Codes neu generieren</button>
+                <button class="danger-outline" onclick="disable2FA()" data-i18n="btn_2fa_disable">2FA deaktivieren</button>
+              </div>
+            </div>
+            <div id="twofaSetupBox" style="display:none;">
+              <div class="qr-box"><img id="twofaQr" src="" alt="QR-Code"></div>
+              <p data-i18n="twofa_scan_text">Scanne den QR-Code mit Google Authenticator, Authy oder 1Password, oder gib das Secret manuell ein:</p>
+              <div class="code-display" id="twofaSecretDisplay"></div>
+              <div class="field">
+                <label data-i18n="label_twofa_confirm_code">Code aus der App zur Bestätigung</label>
+                <input id="twofaConfirmCode" autocomplete="one-time-code">
+              </div>
+              <div class="errorMsg" id="twofaSetupError"></div>
+              <button class="primary" style="width:auto;" onclick="confirm2FASetup()" data-i18n="btn_confirm_enable">Bestätigen & aktivieren</button>
+            </div>
+            <div id="backupCodesBox" style="display:none;">
+              <p data-i18n="backup_codes_text">Neue Backup-Codes — jeder einmalig gültig, alte sind jetzt ungültig. Speichere sie sicher ab:</p>
+              <div class="code-display" id="backupCodesDisplay"></div>
+              <button class="secondary" onclick="document.getElementById('backupCodesBox').style.display='none';" data-i18n="btn_understood">Verstanden, ausblenden</button>
+            </div>
+          </div>
+
+          <div class="card">
+            <h3 data-i18n="account_devices_title">Geräte</h3>
+            <p data-i18n="account_devices_sub">Angemeldete Geräte für dein Konto.</p>
+            <div id="deviceList"></div>
+          </div>
+
+          <div class="card">
+            <h3 data-i18n="report_title">Problem melden</h3>
+            <p data-i18n="report_sub">Beschreib kurz, was nicht funktioniert — wir melden uns per E-Mail.</p>
+            <div class="field">
+              <label data-i18n="label_description">Beschreibung</label>
+              <input id="reportDescription" placeholder="Was ist passiert?">
+            </div>
+            <div class="errorMsg" id="reportError"></div>
+            <div class="okMsg" id="reportOk"></div>
+            <button class="secondary" onclick="reportError()" data-i18n="btn_report">Fehler melden</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ---- Verlauf (Feature #17) ---- -->
+      <div class="tabPane" id="pane-history">
+        <div id="historyPane">
+          <div class="card" style="max-width:none;">
+            <h3 data-i18n="history_title">Download-Verlauf</h3>
+            <p data-i18n="history_sub">Die letzten Downloads aus Plüsch Downloader.</p>
+            <div id="historyList"></div>
+            <div id="historyEmpty" style="display:none;color:rgba(255,255,255,0.4);font-size:13px;" data-i18n="history_empty">Noch keine Downloads vorhanden.</div>
           </div>
         </div>
       </div>
@@ -259,15 +672,26 @@ const WEBSITE_URL = "https://thestupidplueschguy.github.io/Plueschi-Website/";
 
 let pendingChallenge = null;
 let pendingDevice = null;
-let pendingClient = "desktop";
+let currentUser = null;
+let currentToken = null;
+let launcherVersion = "?";
 
 function show(id) {
-  ["loginForm", "registerForm", "twofaForm"].forEach(f => {
+  ["loginForm", "registerForm", "twofaForm", "forgotForm"].forEach(f => {
     document.getElementById(f).style.display = (f === id) ? "block" : "none";
   });
 }
 function showLogin() { show("loginForm"); }
 function showRegister() { show("registerForm"); }
+function showForgot() {
+  show("forgotForm");
+  document.getElementById("forgotStepEmail").style.display = "block";
+  document.getElementById("forgotStepReset").style.display = "none";
+  document.getElementById("forgotError").textContent = "";
+  document.getElementById("forgotResetError").textContent = "";
+  document.getElementById("forgotCode").value = "";
+  document.getElementById("forgotNewPass").value = "";
+}
 
 async function api(url, body) {
   const res = await fetch(url, {
@@ -281,7 +705,7 @@ async function api(url, body) {
 }
 
 function deviceName() {
-  return "Plüsch App Installer";
+  return "Plüsch Studios Launcher";
 }
 
 async function doLogin() {
@@ -355,7 +779,66 @@ async function doRegister() {
   }
 }
 
+async function sendResetCode() {
+  const email = document.getElementById("forgotEmail").value.trim();
+  const errEl = document.getElementById("forgotError");
+  errEl.textContent = "";
+  if (!email) { errEl.textContent = "Bitte E-Mail eingeben."; return; }
+
+  const btn = document.getElementById("forgotSendBtn");
+  btn.disabled = true;
+  try {
+    const data = await api(MAILBOT_URL + "/api/send-otp", { email, reason: "reset" });
+    if (!data.success) {
+      errEl.textContent = data.error || "Code konnte nicht gesendet werden.";
+      return;
+    }
+    document.getElementById("forgotStepEmail").style.display = "none";
+    document.getElementById("forgotStepReset").style.display = "block";
+    document.getElementById("forgotSub").textContent = "Code wurde an " + email + " geschickt";
+  } catch (e) {
+    errEl.textContent = "Verbindung zum Server fehlgeschlagen.";
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+async function doPasswordReset() {
+  const email = document.getElementById("forgotEmail").value.trim();
+  const code = document.getElementById("forgotCode").value.trim();
+  const newPassword = document.getElementById("forgotNewPass").value;
+  const errEl = document.getElementById("forgotResetError");
+  errEl.textContent = "";
+
+  if (!code || !newPassword) { errEl.textContent = "Bitte Code und neues Passwort eingeben."; return; }
+  if (newPassword.length < 6) { errEl.textContent = "Passwort braucht mind. 6 Zeichen."; return; }
+
+  const btn = document.getElementById("forgotResetBtn");
+  btn.disabled = true;
+  try {
+    const verify = await api(MAILBOT_URL + "/api/verify-otp", { email, code });
+    if (!verify.success) {
+      errEl.textContent = verify.error || "Code ungültig.";
+      return;
+    }
+    const result = await api(MAILBOT_URL + "/api/password-reset-complete", { email, new_password: newPassword });
+    if (!result.success) {
+      errEl.textContent = result.error || "Zurücksetzen fehlgeschlagen.";
+      return;
+    }
+    api(MAILBOT_URL + "/api/reset-confirm-mail", { email });
+    alert("Passwort wurde geändert! Du kannst dich jetzt damit anmelden.");
+    showLogin();
+  } catch (e) {
+    errEl.textContent = "Verbindung zum Server fehlgeschlagen.";
+  } finally {
+    btn.disabled = false;
+  }
+}
+
 async function onLoggedIn(user, token) {
+  currentUser = user;
+  currentToken = token;
   await fetch("/api/session/save", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -370,6 +853,8 @@ function enterDashboard(user) {
   document.getElementById("userChip").style.display = "flex";
   document.getElementById("userLabel").textContent = user.display_name || user.username;
   document.getElementById("websiteFrame").src = WEBSITE_URL;
+  loadProducts();
+  loadAccountInfo();
 }
 
 async function logout() {
@@ -380,53 +865,678 @@ async function logout() {
 function switchTab(name) {
   document.querySelectorAll(".tab").forEach(t => t.classList.toggle("active", t.dataset.tab === name));
   document.getElementById("pane-install").classList.toggle("active", name === "install");
+  document.getElementById("pane-account").classList.toggle("active", name === "account");
+  document.getElementById("pane-history").classList.toggle("active", name === "history");
   document.getElementById("pane-website").classList.toggle("active", name === "website");
+  if (name === "history") loadHistory();
 }
 
-// ---- Installation ----
-let pollTimer = null;
-
-async function startInstall() {
-  document.getElementById("installBtn").disabled = true;
-  document.getElementById("progressWrap").style.display = "block";
-  await fetch("/api/install/start", { method: "POST" });
-  pollTimer = setInterval(pollInstallProgress, 500);
+function openPricing() {
+  switchTab("website");
+  document.getElementById("websiteFrame").src = WEBSITE_URL + "pricing.html";
 }
 
-let lastExePath = null;
+// ===== PRODUKTE (Feature #4: Mehrprodukt, #5: Deinstall/Reparieren) =====
+let pollTimers = {};
 
-async function pollInstallProgress() {
-  const res = await fetch("/api/install/progress");
+async function loadProducts() {
+  const res = await fetch("/api/products");
   const data = await res.json();
-  document.getElementById("progressFill").style.width = (data.percent || 0) + "%";
-  document.getElementById("progressLabel").textContent = data.message || "";
+  const list = document.getElementById("productList");
+  list.innerHTML = "";
 
-  if (data.status === "done") {
-    clearInterval(pollTimer);
-    document.getElementById("installBtn").style.display = "none";
-    document.getElementById("launchBtn").style.display = "inline-block";
-    lastExePath = data.exe_path;
-  } else if (data.status === "error") {
-    clearInterval(pollTimer);
-    document.getElementById("installBtn").disabled = false;
-    document.getElementById("progressLabel").textContent = data.message;
-  }
-}
-
-async function launchApp() {
-  await fetch("/api/install/launch", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ exe_path: lastExePath }),
+  (data.products || []).forEach(p => {
+    const card = document.createElement("div");
+    card.className = "card";
+    card.id = "product-" + p.id;
+    const updateBadge = p.update_available
+      ? `<span class="badge-current" style="background:rgba(236,72,153,0.2);color:var(--c2-light);">Update verfügbar: ${p.latest_version}</span>`
+      : "";
+    card.innerHTML = `
+      <h3>${p.name} ${updateBadge}</h3>
+      <p>${p.description}${p.installed_version ? ` — installiert: ${p.installed_version}` : ""}</p>
+      <div class="btn-row">
+        <button class="primary" id="installBtn-${p.id}" onclick="startInstall('${p.id}')" style="${p.installed ? 'display:none;' : ''}">Installieren</button>
+        <button class="primary" id="launchBtn-${p.id}" style="background:var(--ok);${p.installed ? '' : 'display:none;'}" onclick="launchProduct('${p.id}', '${(p.exe_path || '').replace(/\\/g, '\\\\')}')">Öffnen</button>
+        <button class="secondary" id="repairBtn-${p.id}" style="${p.installed ? '' : 'display:none;'}" onclick="startInstall('${p.id}')">${p.update_available ? "Aktualisieren" : "Reparieren"}</button>
+        <button class="danger-outline" id="uninstallBtn-${p.id}" style="${p.installed ? '' : 'display:none;'}" onclick="uninstallProduct('${p.id}', '${p.name}')">Deinstallieren</button>
+      </div>
+      <div class="progressWrap" id="progressWrap-${p.id}">
+        <div class="progressBar"><div id="progressFill-${p.id}"></div></div>
+        <div class="progressLabel" id="progressLabel-${p.id}"></div>
+      </div>
+    `;
+    list.appendChild(card);
   });
 }
 
-// ---- Gespeicherten Login beim Start wiederherstellen ----
+async function startInstall(productId) {
+  document.getElementById("installBtn-" + productId).disabled = true;
+  document.getElementById("progressWrap-" + productId).style.display = "block";
+  await api("/api/install/start", { product_id: productId });
+  pollTimers[productId] = setInterval(() => pollInstallProgress(productId), 500);
+}
+
+async function pollInstallProgress(productId) {
+  const res = await fetch("/api/install/progress?product_id=" + encodeURIComponent(productId));
+  const data = await res.json();
+  const fill = document.getElementById("progressFill-" + productId);
+  const label = document.getElementById("progressLabel-" + productId);
+  if (!fill) { clearInterval(pollTimers[productId]); return; }
+  fill.style.width = (data.percent || 0) + "%";
+  label.textContent = data.message || "";
+
+  if (data.status === "done") {
+    clearInterval(pollTimers[productId]);
+    document.getElementById("installBtn-" + productId).style.display = "none";
+    document.getElementById("launchBtn-" + productId).style.display = "inline-block";
+    document.getElementById("launchBtn-" + productId).setAttribute("onclick",
+      `launchProduct('${productId}', '${data.exe_path.replace(/\\/g, '\\\\')}')`);
+    document.getElementById("repairBtn-" + productId).style.display = "inline-block";
+    document.getElementById("uninstallBtn-" + productId).style.display = "inline-block";
+  } else if (data.status === "error") {
+    clearInterval(pollTimers[productId]);
+    document.getElementById("installBtn-" + productId).disabled = false;
+    label.textContent = data.message;
+  }
+}
+
+async function launchProduct(productId, exePath) {
+  await api("/api/install/launch", { exe_path: exePath });
+}
+
+async function uninstallProduct(productId, name) {
+  if (!confirm(`${name} wirklich deinstallieren?`)) return;
+  await api("/api/install/uninstall", { product_id: productId });
+  loadProducts();
+}
+
+// ===== ACCOUNT (Feature #2: Profil/2FA, #12: Geräte) =====
+
+async function loadAccountInfo() {
+  if (!currentUser || !currentToken) return;
+  const data = await api(MAILBOT_URL + "/api/session/check", {
+    username: currentUser.username, token: currentToken,
+  });
+  if (!data.success) return;
+
+  document.getElementById("profDisplayName").value = data.user.display_name || "";
+  document.getElementById("profEmail").value = data.user.email || "";
+  document.getElementById("profBio").value = data.user.bio || "";
+
+  document.getElementById("twofaStatusOff").style.display = data.user.totp_enabled ? "none" : "block";
+  document.getElementById("twofaStatusOn").style.display = data.user.totp_enabled ? "block" : "none";
+  document.getElementById("twofaSetupBox").style.display = "none";
+
+  renderDevices(data.user.sessions || []);
+
+  // Feature #11: Statistik-Übersicht
+  document.getElementById("statPlan").textContent = data.user.plan || "Free";
+  document.getElementById("statDevices").textContent = (data.user.sessions || []).length;
+  document.getElementById("statJoined").textContent = data.user.joined
+    ? new Date(data.user.joined * 1000).toLocaleDateString("de-DE", { year: "numeric", month: "short" })
+    : "-";
+  try {
+    const hres = await fetch("/api/history");
+    const hdata = await hres.json();
+    document.getElementById("statDownloads").textContent = (hdata.entries || []).length;
+  } catch (e) {
+    document.getElementById("statDownloads").textContent = "-";
+  }
+
+  loadAutostartStatus();
+}
+
+// ===== VERLAUF (Feature #17) =====
+async function loadHistory() {
+  const listEl = document.getElementById("historyList");
+  const emptyEl = document.getElementById("historyEmpty");
+  listEl.innerHTML = "";
+  let entries = [];
+  try {
+    const res = await fetch("/api/history");
+    const data = await res.json();
+    entries = data.entries || [];
+  } catch (e) {}
+
+  if (!entries.length) {
+    emptyEl.style.display = "block";
+    return;
+  }
+  emptyEl.style.display = "none";
+  entries.forEach(e => {
+    const row = document.createElement("div");
+    row.className = "history-item";
+    row.innerHTML = `
+      ${e.thumbnail ? `<img class="history-thumb" src="${e.thumbnail}">` : `<div class="history-thumb"></div>`}
+      <div class="history-info">
+        <div class="history-title">${e.title || "Unbenannt"}</div>
+        <div class="history-meta">${e.format || ""}${e.quality ? " · " + e.quality : ""}${e.date ? " · " + e.date : ""}</div>
+      </div>
+    `;
+    listEl.appendChild(row);
+  });
+}
+
+// ===== MIT WINDOWS STARTEN (Feature #14) =====
+async function loadAutostartStatus() {
+  try {
+    const res = await fetch("/api/launcher/autostart");
+    const data = await res.json();
+    document.getElementById("autostartToggle").classList.toggle("on", !!data.enabled);
+  } catch (e) {}
+}
+async function toggleAutostart() {
+  const btn = document.getElementById("autostartToggle");
+  const next = !btn.classList.contains("on");
+  btn.classList.toggle("on", next);
+  try {
+    await api("/api/launcher/autostart", { enabled: next });
+  } catch (e) {
+    btn.classList.toggle("on", !next);
+  }
+}
+
+// ===== OFFLINE-ERKENNUNG (Feature #15) =====
+async function checkOnlineStatus() {
+  try {
+    const res = await fetch(MAILBOT_URL + "/health", { method: "GET" });
+    document.getElementById("offlineBanner").classList.toggle("show", !res.ok);
+  } catch (e) {
+    document.getElementById("offlineBanner").classList.add("show");
+  }
+}
+setInterval(checkOnlineStatus, 15000);
+checkOnlineStatus();
+
+function renderDevices(sessions) {
+  const list = document.getElementById("deviceList");
+  list.innerHTML = "";
+  sessions.forEach(s => {
+    const row = document.createElement("div");
+    row.className = "device-row";
+    const lastActive = s.last_active ? new Date(s.last_active * 1000).toLocaleString("de-DE") : "-";
+    row.innerHTML = `
+      <div>
+        <div class="device-title">${s.device || "Unbekanntes Gerät"}${s.is_current ? '<span class="badge-current">Dieses Gerät</span>' : ''}</div>
+        <div class="device-meta">Zuletzt aktiv: ${lastActive}</div>
+      </div>
+      ${s.is_current ? '' : `<button class="danger-outline" onclick="removeDevice('${s.token_hint}')">Abmelden</button>`}
+    `;
+    list.appendChild(row);
+  });
+}
+
+async function removeDevice(tokenHint) {
+  if (!confirm("Dieses Gerät abmelden?")) return;
+  await api(MAILBOT_URL + "/api/user/devices/remove", {
+    username: currentUser.username, token: currentToken, token_hint: tokenHint,
+  });
+  loadAccountInfo();
+}
+
+async function saveProfile() {
+  const errEl = document.getElementById("profError");
+  const okEl = document.getElementById("profOk");
+  errEl.textContent = ""; okEl.textContent = "";
+
+  const data = await api(MAILBOT_URL + "/api/user/update", {
+    username: currentUser.username, token: currentToken,
+    display_name: document.getElementById("profDisplayName").value.trim(),
+    email: document.getElementById("profEmail").value.trim(),
+    bio: document.getElementById("profBio").value.trim(),
+  });
+  if (!data.success) {
+    errEl.textContent = data.error || "Speichern fehlgeschlagen.";
+    return;
+  }
+  okEl.textContent = "Gespeichert!";
+  document.getElementById("userLabel").textContent = document.getElementById("profDisplayName").value.trim() || currentUser.username;
+}
+
+async function start2FASetup() {
+  const data = await api(MAILBOT_URL + "/api/2fa/setup", {
+    username: currentUser.username, token: currentToken,
+  });
+  if (!data.success) { alert(data.error || "2FA-Setup fehlgeschlagen."); return; }
+
+  document.getElementById("twofaQr").src = data.qr_code;
+  document.getElementById("twofaSecretDisplay").textContent = data.secret;
+  document.getElementById("twofaSetupBox").style.display = "block";
+  document.getElementById("twofaStatusOff").style.display = "none";
+
+  // Backup-Codes auch direkt zeigen - einmalige Gelegenheit, danach nie wieder im Klartext.
+  document.getElementById("backupCodesDisplay").textContent = data.backup_codes.join("\n");
+  document.getElementById("backupCodesBox").style.display = "block";
+}
+
+async function confirm2FASetup() {
+  const code = document.getElementById("twofaConfirmCode").value.trim();
+  const errEl = document.getElementById("twofaSetupError");
+  errEl.textContent = "";
+  if (!code) { errEl.textContent = "Code eingeben."; return; }
+
+  const data = await api(MAILBOT_URL + "/api/2fa/confirm", {
+    username: currentUser.username, token: currentToken, code,
+  });
+  if (!data.success) {
+    errEl.textContent = data.error || "Code ungültig.";
+    return;
+  }
+  document.getElementById("twofaSetupBox").style.display = "none";
+  loadAccountInfo();
+}
+
+async function disable2FA() {
+  const password = prompt("Zur Bestätigung: aktuelles Passwort eingeben");
+  if (!password) return;
+  const data = await api(MAILBOT_URL + "/api/2fa/disable", {
+    username: currentUser.username, token: currentToken, password,
+  });
+  if (!data.success) { alert(data.error || "Fehlgeschlagen."); return; }
+  loadAccountInfo();
+}
+
+async function regenerateBackupCodes() {
+  const password = prompt("Zur Bestätigung: aktuelles Passwort eingeben");
+  if (!password) return;
+  const data = await api(MAILBOT_URL + "/api/2fa/regenerate-backup-codes", {
+    username: currentUser.username, token: currentToken, password,
+  });
+  if (!data.success) { alert(data.error || "Fehlgeschlagen."); return; }
+  document.getElementById("backupCodesDisplay").textContent = data.backup_codes.join("\n");
+  document.getElementById("backupCodesBox").style.display = "block";
+}
+
+// ===== SCHNELLSUCHE / COMMAND PALETTE (Feature #8, Strg+K) =====
+let cmdkSelIndex = 0;
+
+function getCommands() {
+  const cmds = [
+    { label: "Zu Produkte wechseln", run: () => switchTab("install") },
+    { label: "Zu Account wechseln", run: () => switchTab("account") },
+    { label: "Zu Verlauf wechseln", run: () => switchTab("history") },
+    { label: "Zu Plüsch Studios (Website) wechseln", run: () => switchTab("website") },
+    { label: "Hell/Dunkel umschalten", run: () => toggleTheme() },
+    { label: "Sprache umschalten (DE/EN)", run: () => toggleLanguage() },
+    { label: "Nach Launcher-Update suchen", run: () => checkLauncherUpdate() },
+  ];
+  if (currentUser) cmds.push({ label: "Abmelden", run: () => logout() });
+  return cmds;
+}
+
+function openCmdk() {
+  document.getElementById("cmdkOverlay").classList.add("show");
+  const input = document.getElementById("cmdkInput");
+  input.value = "";
+  input.focus();
+  cmdkSelIndex = 0;
+  renderCmdkResults();
+}
+function closeCmdk() {
+  document.getElementById("cmdkOverlay").classList.remove("show");
+}
+function renderCmdkResults() {
+  const query = document.getElementById("cmdkInput").value.toLowerCase();
+  const matches = getCommands().filter(c => c.label.toLowerCase().includes(query));
+  cmdkSelIndex = Math.min(cmdkSelIndex, Math.max(0, matches.length - 1));
+  const list = document.getElementById("cmdkResults");
+  list.innerHTML = "";
+  matches.forEach((c, i) => {
+    const el = document.createElement("div");
+    el.className = "cmdk-item" + (i === cmdkSelIndex ? " sel" : "");
+    el.textContent = c.label;
+    el.onclick = () => { c.run(); closeCmdk(); };
+    list.appendChild(el);
+  });
+  window._cmdkMatches = matches;
+}
+function cmdkKeydown(e) {
+  const matches = window._cmdkMatches || [];
+  if (e.key === "ArrowDown") { e.preventDefault(); cmdkSelIndex = Math.min(cmdkSelIndex + 1, matches.length - 1); renderCmdkResults(); }
+  else if (e.key === "ArrowUp") { e.preventDefault(); cmdkSelIndex = Math.max(cmdkSelIndex - 1, 0); renderCmdkResults(); }
+  else if (e.key === "Enter") { if (matches[cmdkSelIndex]) { matches[cmdkSelIndex].run(); closeCmdk(); } }
+  else if (e.key === "Escape") { closeCmdk(); }
+}
+document.addEventListener("keydown", (e) => {
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
+    e.preventDefault();
+    const overlay = document.getElementById("cmdkOverlay");
+    overlay.classList.contains("show") ? closeCmdk() : openCmdk();
+  }
+});
+
+// ===== PROBLEM MELDEN (Feature #6) =====
+async function reportError() {
+  const description = document.getElementById("reportDescription").value.trim();
+  const errEl = document.getElementById("reportError");
+  const okEl = document.getElementById("reportOk");
+  errEl.textContent = ""; okEl.textContent = "";
+
+  if (!description) { errEl.textContent = "Bitte kurz beschreiben, was los ist."; return; }
+  if (!currentUser || !currentUser.email) {
+    errEl.textContent = "Dein Konto hat keine hinterlegte E-Mail - trag erst eine im Profil oben ein.";
+    return;
+  }
+
+  const data = await api(MAILBOT_URL + "/api/report-error", {
+    email: currentUser.email,
+    description,
+    context: "Plüsch Studios Launcher v" + launcherVersion,
+  });
+  if (!data.success) {
+    errEl.textContent = data.error || "Konnte nicht gesendet werden.";
+    return;
+  }
+  okEl.textContent = `Danke! Ticket #${data.ticket_id} wurde angelegt, wir melden uns per Mail.`;
+  document.getElementById("reportDescription").value = "";
+}
+
+// ===== SPRACHE (Feature #10: DE/EN) =====
+// Deckt die feste UI-Beschriftung ab (Labels, Buttons, Überschriften).
+// Dynamisch geladene Inhalte (Geräteliste, Produktkarten) und Server-
+// Fehlermeldungen bleiben bewusst Deutsch - die kommen live vom Mailbot
+// und würden eine eigene Backend-Übersetzung brauchen.
+const I18N = {
+  de: {
+    login_title: "Anmelden", login_sub: "Mit deinem Plüsch-Konto anmelden",
+    label_username: "Benutzername", label_password: "Passwort",
+    btn_login: "Anmelden", link_register: "Noch kein Konto? Registrieren", link_forgot: "Passwort vergessen?",
+    register_title: "Konto erstellen", register_sub: "Ein Konto für alle Plüsch-Produkte",
+    label_email_optional: "E-Mail (optional)", btn_register: "Konto erstellen", link_login: "Schon ein Konto? Anmelden",
+    twofa_title: "Bestätigungscode", twofa_sub: "2FA ist für dieses Konto aktiviert",
+    label_twofa_code: "Code aus deiner Authenticator-App", btn_confirm: "Bestätigen",
+    forgot_title: "Passwort vergessen", forgot_sub: "Gib deine E-Mail ein, wir schicken dir einen Code",
+    label_email: "E-Mail", btn_send_code: "Code senden",
+    label_code_email: "Code aus der E-Mail", label_new_password: "Neues Passwort",
+    btn_reset_password: "Passwort zurücksetzen", link_back_login: "Zurück zum Login",
+    tab_products: "Plüsch Produkte", tab_account: "Account", tab_website: "Plüsch Studios", tab_history: "Verlauf",
+    link_logout: "Abmelden",
+    account_stats_title: "Übersicht", stat_plan: "Tarif", stat_devices: "Geräte",
+    stat_downloads: "Downloads (PDL)", stat_joined: "Mitglied seit", btn_upgrade: "Tarif ansehen / upgraden",
+    account_launcher_title: "Launcher-Einstellungen", setting_autostart: "Mit Windows starten",
+    setting_autostart_sub: "Startet den Launcher minimiert im Tray beim Hochfahren",
+    history_title: "Download-Verlauf", history_sub: "Die letzten Downloads aus Plüsch Downloader.",
+    history_empty: "Noch keine Downloads vorhanden.",
+    setting_crash: "Anonyme Fehlerberichte senden",
+    setting_crash_sub: "Hilft uns, Abstürze zu erkennen — ganz ohne Nutzerdaten, nur mit deiner Zustimmung",
+    account_backup_title: "Einstellungen sichern",
+    account_backup_sub: "Sichert Theme, Sprache und diese Schalter lokal — unabhängig von deinem Konto.",
+    btn_backup_create: "Backup erstellen", btn_backup_restore: "Wiederherstellen",
+    whatsnew_title: "🚀 Was ist neu", btn_whatsnew_ok: "Alles klar",
+    account_profile_title: "Profil", label_display_name: "Anzeigename", label_bio: "Bio", btn_save: "Speichern",
+    account_2fa_title: "Zwei-Faktor-Authentifizierung",
+    twofa_off_text: "2FA ist für dein Konto nicht aktiv.", btn_2fa_enable: "2FA aktivieren",
+    twofa_on_text: "2FA ist aktiv — dein Konto ist zusätzlich geschützt.",
+    btn_regen_codes: "Backup-Codes neu generieren", btn_2fa_disable: "2FA deaktivieren",
+    twofa_scan_text: "Scanne den QR-Code mit Google Authenticator, Authy oder 1Password, oder gib das Secret manuell ein:",
+    label_twofa_confirm_code: "Code aus der App zur Bestätigung", btn_confirm_enable: "Bestätigen & aktivieren",
+    backup_codes_text: "Neue Backup-Codes — jeder einmalig gültig, alte sind jetzt ungültig. Speichere sie sicher ab:",
+    btn_understood: "Verstanden, ausblenden",
+    account_devices_title: "Geräte", account_devices_sub: "Angemeldete Geräte für dein Konto.",
+    report_title: "Problem melden", report_sub: "Beschreib kurz, was nicht funktioniert — wir melden uns per E-Mail.",
+    label_description: "Beschreibung", btn_report: "Fehler melden",
+  },
+  en: {
+    login_title: "Sign in", login_sub: "Sign in with your Plüsch account",
+    label_username: "Username", label_password: "Password",
+    btn_login: "Sign in", link_register: "No account yet? Register", link_forgot: "Forgot password?",
+    register_title: "Create account", register_sub: "One account for all Plüsch products",
+    label_email_optional: "Email (optional)", btn_register: "Create account", link_login: "Already have an account? Sign in",
+    twofa_title: "Confirmation code", twofa_sub: "2FA is enabled for this account",
+    label_twofa_code: "Code from your authenticator app", btn_confirm: "Confirm",
+    forgot_title: "Forgot password", forgot_sub: "Enter your email and we'll send you a code",
+    label_email: "Email", btn_send_code: "Send code",
+    label_code_email: "Code from the email", label_new_password: "New password",
+    btn_reset_password: "Reset password", link_back_login: "Back to login",
+    tab_products: "Plüsch Products", tab_account: "Account", tab_website: "Plüsch Studios", tab_history: "History",
+    link_logout: "Sign out",
+    account_stats_title: "Overview", stat_plan: "Plan", stat_devices: "Devices",
+    stat_downloads: "Downloads (PDL)", stat_joined: "Member since", btn_upgrade: "View plan / upgrade",
+    account_launcher_title: "Launcher settings", setting_autostart: "Start with Windows",
+    setting_autostart_sub: "Starts the launcher minimized to the tray on boot",
+    history_title: "Download history", history_sub: "Your most recent downloads from Plüsch Downloader.",
+    history_empty: "No downloads yet.",
+    setting_crash: "Send anonymous crash reports",
+    setting_crash_sub: "Helps us catch crashes — no user data involved, only with your consent",
+    account_backup_title: "Backup settings",
+    account_backup_sub: "Backs up theme, language and these switches locally — independent of your account.",
+    btn_backup_create: "Create backup", btn_backup_restore: "Restore",
+    whatsnew_title: "🚀 What's new", btn_whatsnew_ok: "Got it",
+    account_profile_title: "Profile", label_display_name: "Display name", label_bio: "Bio", btn_save: "Save",
+    account_2fa_title: "Two-Factor Authentication",
+    twofa_off_text: "2FA is not enabled for your account.", btn_2fa_enable: "Enable 2FA",
+    twofa_on_text: "2FA is enabled — your account has extra protection.",
+    btn_regen_codes: "Regenerate backup codes", btn_2fa_disable: "Disable 2FA",
+    twofa_scan_text: "Scan the QR code with Google Authenticator, Authy or 1Password, or enter the secret manually:",
+    label_twofa_confirm_code: "Code from the app to confirm", btn_confirm_enable: "Confirm & enable",
+    backup_codes_text: "New backup codes — each valid once, the old ones are now invalid. Save them somewhere safe:",
+    btn_understood: "Got it, hide",
+    account_devices_title: "Devices", account_devices_sub: "Devices signed in to your account.",
+    report_title: "Report a problem", report_sub: "Briefly describe what's not working — we'll follow up by email.",
+    label_description: "Description", btn_report: "Report problem",
+  },
+};
+
+function applyLanguage(lang) {
+  const dict = I18N[lang] || I18N.de;
+  document.querySelectorAll("[data-i18n]").forEach(el => {
+    const key = el.getAttribute("data-i18n");
+    if (dict[key]) el.textContent = dict[key];
+  });
+  document.getElementById("langToggle").textContent = lang.toUpperCase();
+}
+function toggleLanguage() {
+  const current = document.getElementById("langToggle").textContent.toLowerCase();
+  const next = current === "de" ? "en" : "de";
+  applyLanguage(next);
+  try { localStorage.setItem("pluesch_lang", next); } catch (e) {}
+  api("/api/settings", { lang: next });
+}
+(function initLanguage() {
+  let saved = null;
+  try { saved = localStorage.getItem("pluesch_lang"); } catch (e) {}
+  applyLanguage(saved === "en" ? "en" : "de");
+})();
+
+// ===== THEME (hell/dunkel) =====
+function applyTheme(light) {
+  document.body.classList.toggle("light", light);
+  document.getElementById("themeToggle").textContent = light ? "☀️" : "🌙";
+}
+function toggleTheme() {
+  const nowLight = !document.body.classList.contains("light");
+  applyTheme(nowLight);
+  try { localStorage.setItem("pluesch_theme", nowLight ? "light" : "dark"); } catch (e) {}
+  api("/api/settings", { theme: nowLight ? "light" : "dark" });
+}
+(function initTheme() {
+  let saved = null;
+  try { saved = localStorage.getItem("pluesch_theme"); } catch (e) {}
+  applyTheme(saved === "light");
+})();
+
+// ===== LAUNCHER-SELBST-UPDATE (Feature #1) =====
+async function checkLauncherUpdate() {
+  try {
+    const res = await fetch("/api/launcher/check-update");
+    const data = await res.json();
+    if (data.success && data.update_available) {
+      document.getElementById("updateBannerText").textContent =
+        `🚀 Update verfügbar: v${data.latest_version} (du hast v${data.current_version})`;
+      document.getElementById("updateBanner").classList.add("show");
+      window._pendingUpdate = { asset_url: data.asset_url, asset_name: data.asset_name };
+    }
+  } catch (e) { /* kein Internet o.ä. - Launcher startet trotzdem normal */ }
+}
+
+async function startLauncherUpdate() {
+  if (!window._pendingUpdate) return;
+  const btn = document.getElementById("updateBannerBtn");
+  btn.disabled = true;
+  await api("/api/launcher/update/start", window._pendingUpdate);
+  const poll = setInterval(async () => {
+    const res = await fetch("/api/launcher/update/progress");
+    const data = await res.json();
+    document.getElementById("updateBannerText").textContent = data.message || "Update läuft...";
+    if (data.status === "error") {
+      clearInterval(poll);
+      btn.disabled = false;
+    }
+    // bei "done" beendet sich der Launcher selbst und startet neu - kein weiteres Zutun nötig.
+  }, 500);
+}
+
+// ===== CRASH-REPORTS, Opt-in (Feature #18) =====
+let crashReportsEnabled = false;
+
+async function toggleCrashReports() {
+  const btn = document.getElementById("crashToggle");
+  const next = !btn.classList.contains("on");
+  btn.classList.toggle("on", next);
+  crashReportsEnabled = next;
+  try {
+    await api("/api/settings", { crash_reports_enabled: next });
+  } catch (e) {
+    btn.classList.toggle("on", !next);
+    crashReportsEnabled = !next;
+  }
+}
+
+async function reportFrontendError(message) {
+  if (!crashReportsEnabled) return;
+  try {
+    await api("/api/crash-report/manual", { traceback: String(message || "").slice(0, 4000) });
+  } catch (e) { /* Crash-Reporting darf selbst nie weiter stören */ }
+}
+window.addEventListener("error", (e) => {
+  reportFrontendError(`${e.message}\n${e.filename}:${e.lineno}:${e.colno}`);
+});
+window.addEventListener("unhandledrejection", (e) => {
+  reportFrontendError(String(e.reason && e.reason.stack ? e.reason.stack : e.reason));
+});
+
+// ===== BACKUP/RESTORE (Feature #20) =====
+async function loadBackupList() {
+  const sel = document.getElementById("backupSelect");
+  sel.innerHTML = "";
+  try {
+    const res = await fetch("/api/settings/backups");
+    const data = await res.json();
+    (data.backups || []).forEach(b => {
+      const opt = document.createElement("option");
+      opt.value = b.filename;
+      opt.textContent = new Date(b.mtime * 1000).toLocaleString("de-DE");
+      sel.appendChild(opt);
+    });
+  } catch (e) {}
+}
+
+async function createBackup() {
+  const okEl = document.getElementById("backupOk");
+  const data = await api("/api/settings/backup", {});
+  if (data.success) {
+    okEl.textContent = "Backup gespeichert.";
+    loadBackupList();
+  } else {
+    okEl.textContent = data.error || "Backup fehlgeschlagen.";
+  }
+}
+
+async function restoreBackup() {
+  const sel = document.getElementById("backupSelect");
+  const okEl = document.getElementById("backupOk");
+  if (!sel.value) { okEl.textContent = "Kein Backup ausgewählt."; return; }
+  const data = await api("/api/settings/restore", { filename: sel.value });
+  if (!data.success) { okEl.textContent = data.error || "Wiederherstellen fehlgeschlagen."; return; }
+  applySettings(data.settings);
+  okEl.textContent = "Einstellungen wiederhergestellt.";
+}
+
+function applySettings(settings) {
+  if (!settings) return;
+  applyTheme(settings.theme === "light");
+  try { localStorage.setItem("pluesch_theme", settings.theme || "dark"); } catch (e) {}
+  applyLanguage(settings.lang === "en" ? "en" : "de");
+  try { localStorage.setItem("pluesch_lang", settings.lang || "de"); } catch (e) {}
+  crashReportsEnabled = !!settings.crash_reports_enabled;
+  document.getElementById("crashToggle").classList.toggle("on", crashReportsEnabled);
+}
+
+// ===== "WAS IST NEU"-POPUP (Feature #19) =====
+// Pro Version eine kurze Liste - bei neuen Releases hier einfach einen
+// weiteren Eintrag ergänzen. Fehlt ein Eintrag für die aktuelle Version,
+// bleibt das Popup einfach aus.
+const WHATS_NEW = {
+  "1.1.0": [
+    "Statistik-Übersicht im Account-Tab (Tarif, Geräte, Downloads)",
+    "\"Mit Windows starten\"-Option",
+    "Offline-Erkennung mit klarer Meldung",
+    "Download-Verlauf als eigener Tab",
+    "Tarif-Anzeige mit Upgrade-Link",
+  ],
+  "1.2.0": [
+    "Opt-in anonyme Crash-Berichte",
+    "\"Was ist neu\"-Popup nach Updates (du siehst es gerade)",
+    "Backup/Restore der lokalen Launcher-Einstellungen",
+  ],
+};
+
+function closeWhatsNew() {
+  document.getElementById("whatsNewOverlay").classList.remove("show");
+}
+
+async function checkWhatsNew(settings) {
+  const entries = WHATS_NEW[launcherVersion];
+  if (!entries || !settings) return;
+  const lastSeen = settings.last_seen_version;
+  if (lastSeen === launcherVersion) return;
+  // Erster Start überhaupt (kein last_seen_version gespeichert): nicht mit
+  // dem Popup überfallen, einfach die aktuelle Version lautlos vormerken.
+  if (!lastSeen) {
+    api("/api/settings", { last_seen_version: launcherVersion });
+    return;
+  }
+  document.getElementById("whatsNewVersion").textContent = "Version " + launcherVersion;
+  const list = document.getElementById("whatsNewList");
+  list.innerHTML = "";
+  entries.forEach(t => {
+    const li = document.createElement("li");
+    li.textContent = t;
+    list.appendChild(li);
+  });
+  document.getElementById("whatsNewOverlay").classList.add("show");
+  api("/api/settings", { last_seen_version: launcherVersion });
+}
+
+// ===== Start =====
 (async function init() {
+  checkLauncherUpdate();
+  try {
+    const vres = await fetch("/api/launcher/version");
+    const vdata = await vres.json();
+    launcherVersion = vdata.version || "?";
+  } catch (e) {}
+
+  let settings = null;
+  try {
+    const sres = await fetch("/api/settings");
+    const sdata = await sres.json();
+    settings = sdata.settings || null;
+  } catch (e) {}
+  if (settings) {
+    crashReportsEnabled = !!settings.crash_reports_enabled;
+    document.getElementById("crashToggle").classList.toggle("on", crashReportsEnabled);
+    checkWhatsNew(settings);
+  }
+  loadBackupList();
+
   try {
     const res = await fetch("/api/session/saved");
     const data = await res.json();
-    if (data && data.user) {
+    if (data && data.user && data.token) {
+      currentUser = data.user;
+      currentToken = data.token;
       enterDashboard(data.user);
     }
   } catch (e) {}
