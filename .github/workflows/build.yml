@@ -1,4 +1,4 @@
-name: Build Plüsch Studios Launcher
+name: Build Plüsch App Installer
 
 on:
   push:
@@ -21,18 +21,24 @@ jobs:
         with:
           python-version: '3.11'
       - name: Abhängigkeiten installieren
-        run: pip install flask pywebview pythonnet pyinstaller pystray pillow
+        run: pip install flask pywebview pythonnet pyinstaller
+      - name: Versionsdatei schreiben
+        run: |
+          $v = "${{ inputs.version }}"
+          if ([string]::IsNullOrWhiteSpace($v)) { $v = "dev" }
+          Set-Content -Path version.txt -Value $v -NoNewline -Encoding utf8
       - name: EXE bauen (onefile, ohne UPX)
         run: |
           pyinstaller --onefile --noupx --noconsole `
-            --name "Plüsch Studios Launcher" `
+            --name "Plüsch App" `
             --add-data "templates;templates" `
+            --add-data "version.txt;." `
             app.py
       - name: EXE als Artifact hochladen (privat, nur zum Testen)
         uses: actions/upload-artifact@v4
         with:
-          name: Pluesch_Studios_Launcher_Windows
-          path: "dist/Plüsch Studios Launcher.exe"
+          name: Pluesch_App_Installer_Windows
+          path: "dist/Plüsch App.exe"
       - name: Öffentlichen Release veröffentlichen
         if: github.event_name == 'workflow_dispatch' && inputs.version != ''
         uses: softprops/action-gh-release@v2
@@ -40,8 +46,8 @@ jobs:
           # Eigenes Release-Repo fürs Installer-Projekt, getrennt von plueschi-releases (PDL).
           # Falls du lieber dasselbe Repo wie PDL nutzen willst, hier einfach
           # "TheStupidPlueschGuy/plueschi-releases" eintragen.
-          repository: TheStupidPlueschGuy/pluesch-installer-releases
+          repository: TheStupidPlueschGuy/pluesch-app-releases
           token: ${{ secrets.PUBLIC_RELEASE_TOKEN }}
           tag_name: ${{ inputs.version }}
-          name: "Plüsch Studios Launcher ${{ inputs.version }}"
-          files: "dist/Plüsch Studios Launcher.exe"
+          name: "Plüsch App ${{ inputs.version }}"
+          files: "dist/Plüsch App.exe"
