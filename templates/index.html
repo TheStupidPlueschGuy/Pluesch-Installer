@@ -694,13 +694,25 @@ function showForgot() {
 }
 
 async function api(url, body) {
-  const res = await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body || {}),
-  });
+  let res;
+  try {
+    res = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body || {}),
+    });
+  } catch (e) {
+    // Netzwerkfehler (Server nicht erreichbar, Verbindung abgebrochen etc.) -
+    // darf nie als ungefangene Exception bei den Aufrufern landen, sonst
+    // bricht die ganze Funktion (z.B. loadAccountInfo) mittendrin ab.
+    return { success: false, error: "Verbindung zum Server fehlgeschlagen." };
+  }
   let data = {};
   try { data = await res.json(); } catch (e) {}
+  if (!res.ok && data.success === undefined) {
+    data.success = false;
+    if (!data.error) data.error = `Serverfehler (${res.status})`;
+  }
   return data;
 }
 
@@ -912,8 +924,22 @@ async function loadProducts() {
 
 async function startInstall(productId) {
   document.getElementById("installBtn-" + productId).disabled = true;
+  // Reparieren/Deinstallieren während eines laufenden Downloads sperren -
+  // sonst können zwei Downloads gleichzeitig auf dieselbe Datei schreiben,
+  // oder der Zielordner wird mitten im Download gelöscht.
+  const repairBtn = document.getElementById("repairBtn-" + productId);
+  const uninstallBtn = document.getElementById("uninstallBtn-" + productId);
+  if (repairBtn) repairBtn.disabled = true;
+  if (uninstallBtn) uninstallBtn.disabled = true;
   document.getElementById("progressWrap-" + productId).style.display = "block";
-  await api("/api/install/start", { product_id: productId });
+  const result = await api("/api/install/start", { product_id: productId });
+  if (result.ok === false) {
+    document.getElementById("installBtn-" + productId).disabled = false;
+    if (repairBtn) repairBtn.disabled = false;
+    if (uninstallBtn) uninstallBtn.disabled = false;
+    document.getElementById("progressLabel-" + productId).textContent = result.error || "Konnte nicht gestartet werden.";
+    return;
+  }
   pollTimers[productId] = setInterval(() => pollInstallProgress(productId), 500);
 }
 
@@ -932,11 +958,19 @@ async function pollInstallProgress(productId) {
     document.getElementById("launchBtn-" + productId).style.display = "inline-block";
     document.getElementById("launchBtn-" + productId).setAttribute("onclick",
       `launchProduct('${productId}', '${data.exe_path.replace(/\\/g, '\\\\')}')`);
-    document.getElementById("repairBtn-" + productId).style.display = "inline-block";
-    document.getElementById("uninstallBtn-" + productId).style.display = "inline-block";
+    const repairBtnDone = document.getElementById("repairBtn-" + productId);
+    const uninstallBtnDone = document.getElementById("uninstallBtn-" + productId);
+    repairBtnDone.style.display = "inline-block";
+    repairBtnDone.disabled = false;
+    uninstallBtnDone.style.display = "inline-block";
+    uninstallBtnDone.disabled = false;
   } else if (data.status === "error") {
     clearInterval(pollTimers[productId]);
     document.getElementById("installBtn-" + productId).disabled = false;
+    const repairBtnErr = document.getElementById("repairBtn-" + productId);
+    const uninstallBtnErr = document.getElementById("uninstallBtn-" + productId);
+    if (repairBtnErr) repairBtnErr.disabled = false;
+    if (uninstallBtnErr) uninstallBtnErr.disabled = false;
     label.textContent = data.message;
   }
 }
@@ -947,7 +981,11 @@ async function launchProduct(productId, exePath) {
 
 async function uninstallProduct(productId, name) {
   if (!confirm(`${name} wirklich deinstallieren?`)) return;
-  await api("/api/install/uninstall", { product_id: productId });
+  const result = await api("/api/install/uninstall", { product_id: productId });
+  if (result.ok === false) {
+    alert(result.error || "Deinstallieren fehlgeschlagen.");
+    return;
+  }
   loadProducts();
 }
 
@@ -955,6 +993,20 @@ async function uninstallProduct(productId, name) {
 
 async function loadAccountInfo() {
   if (!currentUser || !currentToken) return;
+
+  // Rein lokale Account-Infos (Feature #11 Downloads-Zähler, #14 Autostart)
+  // brauchen den Mailbot gar nicht - laufen daher zuerst und unabhängig
+  // davon, ob der Session-Check unten klappt. So funktioniert zumindest
+  // dieser Teil auch, wenn der Mailbot gerade down/nicht erreichbar ist.
+  loadAutostartStatus();
+  try {
+    const hres = await fetch("/api/history");
+    const hdata = await hres.json();
+    document.getElementById("statDownloads").textContent = (hdata.entries || []).length;
+  } catch (e) {
+    document.getElementById("statDownloads").textContent = "-";
+  }
+
   const data = await api(MAILBOT_URL + "/api/session/check", {
     username: currentUser.username, token: currentToken,
   });
@@ -970,21 +1022,12 @@ async function loadAccountInfo() {
 
   renderDevices(data.user.sessions || []);
 
-  // Feature #11: Statistik-Übersicht
+  // Feature #11: Statistik-Übersicht (Mailbot-abhängiger Teil)
   document.getElementById("statPlan").textContent = data.user.plan || "Free";
   document.getElementById("statDevices").textContent = (data.user.sessions || []).length;
   document.getElementById("statJoined").textContent = data.user.joined
     ? new Date(data.user.joined * 1000).toLocaleDateString("de-DE", { year: "numeric", month: "short" })
     : "-";
-  try {
-    const hres = await fetch("/api/history");
-    const hdata = await hres.json();
-    document.getElementById("statDownloads").textContent = (hdata.entries || []).length;
-  } catch (e) {
-    document.getElementById("statDownloads").textContent = "-";
-  }
-
-  loadAutostartStatus();
 }
 
 // ===== VERLAUF (Feature #17) =====
