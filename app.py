@@ -9,6 +9,7 @@ import traceback
 import subprocess
 import urllib.request
 from flask import Flask, render_template, request, jsonify
+from werkzeug.exceptions import HTTPException
 
 app = Flask(__name__)
 
@@ -268,7 +269,15 @@ def _send_crash_report(exc_text, context="Launcher"):
 
 @app.errorhandler(Exception)
 def _handle_uncaught(e):
-    """Fängt unerwartete Fehler in jeder Route ab und meldet sie (opt-in) anonym."""
+    """
+    Fängt unerwartete Fehler in jeder Route ab und meldet sie (opt-in) anonym.
+    WICHTIG: Flasks eigene HTTPException (404 Not Found, 405 Method Not
+    Allowed, ...) erbt ebenfalls von Exception - ohne diese Ausnahme würde
+    JEDE falsche URL/Methode als "Interner Fehler" (500) getarnt und sogar
+    einen (unnötigen) Crash-Report auslösen. Die gehören unverändert durch.
+    """
+    if isinstance(e, HTTPException):
+        return e
     exc_text = traceback.format_exc()
     app.logger.error(exc_text)
     _send_crash_report(exc_text, context="Launcher-Backend")
@@ -384,6 +393,15 @@ def install_start():
     if not product:
         return jsonify({"ok": False, "error": "Unbekanntes Produkt"}), 404
 
+    # Schutz gegen Doppelklick auf Reparieren/Installieren (oder ein zweites
+    # Browser-Fenster) - zwei gleichzeitige Downloads für dasselbe Produkt
+    # würden sich sonst beide dieselbe .part-Datei teilen und sich gegenseitig
+    # kaputt machen. Das Frontend sperrt die Buttons zusätzlich während der
+    # Laufzeit, das hier ist die eigentliche, verlässliche Absicherung.
+    current = install_progress.get(product_id)
+    if current and current.get("status") in ("checking", "downloading", "shortcut"):
+        return jsonify({"ok": False, "error": "Installation/Update für dieses Produkt läuft bereits."}), 409
+
     def do_install():
         install_progress[product_id] = {"status": "checking", "percent": 2, "message": "Suche neueste Version..."}
         try:
@@ -439,6 +457,12 @@ def install_uninstall():
     product = _get_product(product_id)
     if not product:
         return jsonify({"ok": False, "error": "Unbekanntes Produkt"}), 404
+
+    # Gleicher Grund wie bei /api/install/start: nicht mitten in einem
+    # laufenden Download/Update den Zielordner wegreißen.
+    current = install_progress.get(product_id)
+    if current and current.get("status") in ("checking", "downloading", "shortcut"):
+        return jsonify({"ok": False, "error": "Installation/Update läuft gerade - bitte warten."}), 409
 
     try:
         target_dir = os.path.join(INSTALL_ROOT, product["install_subdir"])
@@ -759,7 +783,7 @@ window = None
 
 
 def start_flask():
-    app.run(debug=False, port=5050, use_reloader=False)
+    app.run(debug=False, port=5050, use_reloader=False, threaded=True)
 
 
 if __name__ == "__main__":
@@ -808,7 +832,7 @@ if __name__ == "__main__":
     except ImportError:
         import webbrowser
         threading.Timer(1.2, lambda: webbrowser.open("http://localhost:5050")).start()
-        app.run(debug=False, port=5050)
+        app.run(debug=False, port=5050, threaded=True)
 
     except Exception:
         # Feature #18: Absturz vor/während des Fensterstarts (außerhalb jeder
